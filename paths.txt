@@ -1,0 +1,25 @@
+# include
+
+/sbin
+/usr/sbin
+/usr/bin
+/usr/libexec
+# /System/Library/Filesystems
+/System/Library/CoreServices
+/System/Library/Frameworks
+/System/Library/PrivateFrameworks
+/System/Applications
+
+# exclude
+!/System/Library/Frameworks/Ruby.framework/
+!/usr/libexec/apache2
+!/usr/libexec/postfix/
+!/usr/libexec/cups/
+!/System/Library/CoreServices/Menu Extras/
+!/usr/local/
+
+!/usr/lib/zsh/
+!/usr/lib/sasl2/
+
+!/Library/Java/
+!/Library/Developer/
