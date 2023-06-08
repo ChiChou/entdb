@@ -14,7 +14,11 @@ with open(cli, 'rb') as fp:
         cmd = cmd + ['--xml', '--entitlements', '-']
     else:
         cmd = cmd + ['--entitlements', ':-']
+    mm.close()
 
 
 def xml(path: str):
-    return subprocess.check_output(cmd + [path]).strip(b'\x00')
+    try:
+        return subprocess.check_output(cmd + [path]).strip(b'\x00')
+    except subprocess.CalledProcessError:
+        return b''
