@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def strip_slash(path: str):
     if path.startswith('/'):
         path = path[1:]
@@ -9,14 +12,14 @@ def strip_slash(path: str):
 
 
 class PathFinder:
-    def __init__(self, filename: str):
-        self.file = filename
+    def __init__(self, rule_file: Path):
+        self.rule_file = rule_file
         self.exclude_tree = {}
         self.includes = set()
         self.parse()
 
     def parse(self):
-        with open(self.file) as fp:
+        with self.rule_file.open() as fp:
             for line in fp:
                 rule = line.strip()
 
