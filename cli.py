@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from entdb.magic import is_macho
-from entdb.db import init, conn
+from entdb.db import connect, init
 from entdb.finder import PathFinder
 from entdb.parser import xml
 
@@ -47,8 +47,9 @@ class Visitor:
                 return
 
 
-def main(rootdir: str):
-    root = Path(rootdir).resolve()
+def main(root: Path, db: str):
+    conn = connect(db)
+
     with open(root / 'System/Library/CoreServices/SystemVersion.plist', 'rb') as fp:
         info = plistlib.load(fp)
         name = info['ProductName']
@@ -86,7 +87,8 @@ def main(rootdir: str):
 
         for key, val in d.items():
             conn.execute(
-                'INSERT INTO pair(binary_id, key, value) VALUES (?, ?, ?)', (bin_id, key, json.dumps(val))
+                'INSERT INTO pair(binary_id, key, value) VALUES (?, ?, ?)', (bin_id, key, json.dumps(
+                    val))
             )
 
         conn.commit()
@@ -96,5 +98,18 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
 
-    init()
-    main('/')
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('root', help='root directory', default='/')
+    parser.add_argument('database', help='database file',
+                        default='data.db', nargs='?')
+    parser.add_argument('--init', action='store_true',
+                        help='initialize database')
+
+    args = parser.parse_args()
+    root = Path(args.root).resolve()
+
+    if args.init:
+        init()
+
+    main(root, args.database)
