@@ -1,4 +1,3 @@
-from pprint import pprint
 import mmap
 import shutil
 import subprocess
