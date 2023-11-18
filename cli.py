@@ -8,7 +8,7 @@ from entdb.finder import PathFinder
 from entdb.parser import xml
 
 
-rule_file = str(Path(__file__).parent / 'paths.txt')
+rule_file = Path(__file__).parent / 'paths.txt'
 finder = PathFinder(rule_file)
 
 
