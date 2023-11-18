@@ -21,6 +21,6 @@ ipsw mount fs ~/Downloads/iPhone100,0_100.0_AAAAA_Restore.ipsw
 
 # another terminal
 python3 cli.py /tmp/000-00000-000.dmg.mount
-# tweak query.py to your needs
+# tweak query.py for your needs
 python3 query.py
 ```
