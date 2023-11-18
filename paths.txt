@@ -4,11 +4,27 @@
 /usr/sbin
 /usr/bin
 /usr/libexec
+
+/var/staged_system_apps/
+
 # /System/Library/Filesystems
 /System/Library/CoreServices
 /System/Library/Frameworks
 /System/Library/PrivateFrameworks
+/System/Library/ExtensionKit/Extensions/
+/System/Library/AppRemovalServices
+/System/Library/TextInput
+
+#/System/Library/AccessibilityBundles
+#/System/Library/PreferenceManifests
+#/System/Library/KerberosPlugins
+#/System/Library/UserEventPlugins
+#/System/Library/UserNotifications
+#/System/Library/MediaStreamPlugins
+
+
 /System/Applications
+/System/DriverKit
 
 # exclude
 !/System/Library/Frameworks/Ruby.framework/
