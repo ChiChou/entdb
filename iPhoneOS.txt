@@ -1,0 +1,7 @@
+/System/Library
+/Applications
+/var/staged_system_apps
+
+/bin
+/sbin
+/usr

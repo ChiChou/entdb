@@ -8,10 +8,6 @@ from entdb.finder import PathFinder
 from entdb.parser import xml
 
 
-rule_file = Path(__file__).parent / 'paths.txt'
-finder = PathFinder(rule_file)
-
-
 class Visitor:
     def __init__(self, finder: PathFinder, root='/'):
         self.finder = finder
@@ -35,9 +31,12 @@ class Visitor:
         if not path.is_dir():
             return
 
-        relative = path.relative_to(self.root)
+        try:
+            relative = path.relative_to(self.root)
+        except ValueError:
+            return
 
-        if finder.is_excluded(str(relative)):
+        if self.finder.is_excluded(str(relative)):
             return
 
         for child in path.iterdir():
@@ -52,6 +51,17 @@ def main(root: Path, db: str):
 
     with open(root / 'System/Library/CoreServices/SystemVersion.plist', 'rb') as fp:
         info = plistlib.load(fp)
+
+        product = info['ProductName']
+        if product == 'iPhone OS':
+            rule_file = 'iPhoneOS.txt'
+        else:
+            rule_file = 'paths.txt'
+            if product != 'macOS':
+                logging.warning('unknown product name: %s', product)
+
+        finder = PathFinder(Path(__file__).parent / rule_file)
+
         name = info['ProductName']
         build = info['ProductBuildVersion']
         ver = info['ProductVersion']
@@ -67,7 +77,11 @@ def main(root: Path, db: str):
         if not is_macho(item):
             continue
 
-        path = '/%s' % item.resolve().relative_to(root)
+        try:
+            path = '/%s' % item.resolve().relative_to(root)
+        except ValueError:
+            continue
+
         if path in known:
             continue
 
@@ -110,6 +124,6 @@ if __name__ == '__main__':
     root = Path(args.root).resolve()
 
     if args.init:
-        init()
+        init(args.database)
 
     main(root, args.database)
