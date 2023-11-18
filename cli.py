@@ -107,6 +107,8 @@ def main(root: Path, db: str):
 
         conn.commit()
 
+    conn.close()
+
 
 if __name__ == '__main__':
     import logging

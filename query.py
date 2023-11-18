@@ -31,3 +31,5 @@ if __name__ == '__main__':
     for row in conn.execute('SELECT DISTINCT key FROM pair ORDER BY key'):
         key, = row
         print(key)
+
+    conn.close()
