@@ -56,11 +56,11 @@ def main(root: Path, db: str):
         if product == 'iPhone OS':
             rule_file = 'iPhoneOS.txt'
         else:
-            rule_file = 'paths.txt'
+            rule_file = 'macOS.txt'
             if product != 'macOS':
                 logging.warning('unknown product name: %s', product)
 
-        finder = PathFinder(Path(__file__).parent / rule_file)
+        finder = PathFinder(Path(__file__).parent / 'rules' / rule_file)
 
         name = info['ProductName']
         build = info['ProductBuildVersion']
