@@ -42,5 +42,6 @@ def is_macho(path_or_str: Path | str):
     except (PermissionError, FileNotFoundError) as _:
         return False
 
-    magic, cputype, cpusubtyp, filetype = struct.unpack('IIII', buf)
-    return test(magic) and filetype == FileType.MH_EXECUTE
+    magic, cputype, cpusubtyp, filetype = struct.unpack('>IIII', buf)
+    return test(magic) # and filetype == FileType.MH_EXECUTE
+
