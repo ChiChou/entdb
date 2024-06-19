@@ -1,5 +1,6 @@
 import plistlib
 import json
+import os
 from pathlib import Path
 
 from entdb.magic import is_macho
@@ -18,6 +19,9 @@ class Visitor:
             yield from self.visit(self.root / item)
 
     def visit(self, path: Path):
+        if not os.access(path, os.R_OK):
+            return
+
         if not path.exists():
             return
 
@@ -40,10 +44,7 @@ class Visitor:
             return
 
         for child in path.iterdir():
-            try:
-                yield from self.visit(child)
-            except PermissionError:
-                return
+            yield from self.visit(child)
 
 
 def main(root: Path, db: str):
