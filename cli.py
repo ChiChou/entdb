@@ -43,7 +43,7 @@ class Visitor:
             try:
                 yield from self.visit(child)
             except PermissionError:
-                return
+                continue
 
 
 def main(root: Path, db: str):
