@@ -51,4 +51,6 @@ class PathFinder:
             leaf = leaf.get(name)
             if leaf is None:
                 return False
-        return leaf == {}
+            if leaf == {}:
+                return True
+        return False
