@@ -25,6 +25,9 @@ class Visitor:
         if not path.exists():
             return
 
+        if path.is_symlink():
+            return
+
         path = path.resolve()
 
         if path.is_file():
