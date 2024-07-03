@@ -1,0 +1,41 @@
+# All
+
+/
+
+# Except templates
+
+!/System/Library/Templates
+
+# Except volumes
+
+!/System/Volumes
+
+# Except user-writable
+
+!/Applications
+!/cores
+!/Library/Application Support/CrashReporter
+!/Library/Application Support/ProApps
+!/Library/Caches
+!/Library/Fonts
+!/Library/Logs/DiagnosticReports
+!/Library/OSAnalytics
+!/Library/Receipts
+!/Library/Trial/Treatments/SIRI_TEXT_TO_SPEECH/factorPacks
+!/Library/Trial/v7/AssetStore/assets
+!/private/tmp
+!/private/var/db/DiagnosticsReporter
+!/private/var/db/PanicReporter
+!/private/var/db/UpdateMetrics/Events
+!/private/var/folders
+!/private/var/protected/sfanalytics
+!/private/var/tmp
+!/Users
+
+# Except installed
+
+!/Library/Developer
+!/Library/PrivilegedHelperTools
+!/Library/SystemExtensions
+!/opt
+!/usr/local

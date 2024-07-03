@@ -50,7 +50,7 @@ class Visitor:
             yield from self.visit(child)
 
 
-def main(root: Path, db: str):
+def main(root: Path, db: str, rules: str):
     conn = connect(db)
 
     with open(root / 'System/Library/CoreServices/SystemVersion.plist', 'rb') as fp:
@@ -58,11 +58,14 @@ def main(root: Path, db: str):
 
         product = info['ProductName']
         if product == 'iPhone OS':
-            rule_file = 'iPhoneOS.txt'
+            rule_file = 'iPhoneOS'
         else:
-            rule_file = 'macOS.txt'
+            rule_file = 'macOS'
             if product != 'macOS':
                 logging.warning('unknown product name: %s', product)
+        if rules != '':
+            rule_file += '_' + rules
+        rule_file += '.txt'
 
         finder = PathFinder(Path(__file__).parent / 'rules' / rule_file)
 
@@ -125,6 +128,7 @@ if __name__ == '__main__':
                         default='data.db', nargs='?')
     parser.add_argument('--init', action='store_true',
                         help='initialize database')
+    parser.add_argument('--rules', help='rules name', default='')
 
     args = parser.parse_args()
     root = Path(args.root).resolve()
@@ -132,4 +136,4 @@ if __name__ == '__main__':
     if args.init:
         init(args.database)
 
-    main(root, args.database)
+    main(root, args.database, args.rules)

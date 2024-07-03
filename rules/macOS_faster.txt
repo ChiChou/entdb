@@ -1,0 +1,53 @@
+# Main
+
+/System/Applications
+/System/Library/CoreServices
+/System/Library/ExtensionKit/Extensions
+/System/Library/Frameworks
+/System/Library/PrivateFrameworks
+/usr/bin
+/usr/libexec
+/usr/sbin
+
+# Secondary
+
+/bin
+/Library/Apple/System/Library/CoreServices
+/Library/Apple/System/Library/PrivateFrameworks
+/Library/Extensions
+/Library/Frameworks
+/private/var/db/SystemPolicyConfiguration
+/sbin
+/System/iOSSupport/System/Library/Frameworks
+/System/iOSSupport/System/Library/PrivateFrameworks
+/System/Library/AssetsV2
+/System/Library/Audio/Plug-Ins
+/System/Library/Classroom
+/System/Library/ColorSync/Calibrators
+/System/Library/CryptoTokenKit
+/System/Library/DriverExtensions
+/System/Library/Extensions
+/System/Library/Filesystems
+/System/Library/Image Capture/Support
+/System/Library/Input Methods
+/System/Library/InternetAccounts
+/System/Library/PreferencePanes
+/System/Library/Printers/Libraries
+/System/Library/QuickLook
+/System/Library/Services
+/System/Library/SystemConfiguration
+/System/Library/SystemProfiler
+/System/Volumes/Preboot/Cryptexes/App/System/Applications
+/System/Volumes/Preboot/Cryptexes/App/System/Library/CoreServices
+/System/Volumes/Preboot/Cryptexes/App/usr/bin
+/System/Volumes/Preboot/Cryptexes/App/usr/libexec
+/System/Volumes/Preboot/Cryptexes/Incoming/OS/System/iOSSupport/System/Library/Frameworks
+/System/Volumes/Preboot/Cryptexes/Incoming/OS/System/Library/Frameworks
+/System/Volumes/Preboot/Cryptexes/Incoming/OS/System/Library/PrivateFrameworks
+/System/Volumes/Preboot/Cryptexes/OS/System/iOSSupport/System/Library/Frameworks
+/System/Volumes/Preboot/Cryptexes/OS/System/Library/Frameworks
+/System/Volumes/Preboot/Cryptexes/OS/System/Library/PrivateFrameworks
+
+# Except many
+
+!/System/Library/Frameworks/Ruby.framework
