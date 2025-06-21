@@ -24,8 +24,7 @@ context_t *db_open(const char *path) {
     return NULL;
 
   ctx->path = strdup(path);
-
-  sqlite3_open(path, &ctx->db);
+  rc = sqlite3_open(path, &ctx->db);
   if (rc != SQLITE_OK || db_init(ctx) != 0) {
     free(ctx->path);
     free(ctx);
