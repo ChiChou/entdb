@@ -18,7 +18,8 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE3_INCLUDE_DIRS})
 
-target_link_libraries(${PROJECT_NAME} ${SQLITE3_LIBRARIES})
+target_compile_options(${PROJECT_NAME} PRIVATE -fmodules)
+target_link_libraries(${PROJECT_NAME} ${SQLITE3_LIBRARIES} pthread)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin

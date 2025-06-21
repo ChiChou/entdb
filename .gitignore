@@ -1,3 +1,5 @@
+.ccls-cache/
+
 *.db
 .DS_Store
 
