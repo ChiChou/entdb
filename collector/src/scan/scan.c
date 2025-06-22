@@ -75,13 +75,16 @@ _Bool is_mach_o(const char *path) {
   FILE *file;
   _Bool ret = false;
 
-  // only check for same endianness,
-  // because we are running inside the host system
   uint32_t valid_values[] = {
       FAT_MAGIC,
       FAT_MAGIC_64,
+      FAT_CIGAM,
+      FAT_CIGAM_64,
+
       MH_MAGIC,
       MH_MAGIC_64,
+      MH_CIGAM,
+      MH_CIGAM_64
   };
 
   file = fopen(path, "rb");

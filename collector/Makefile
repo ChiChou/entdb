@@ -33,5 +33,11 @@ format:
 
 all: scan indexer
 
+DB = test.db
 test-index: all
-	echo /usr/libexec/amfid | $(INDEX)
+	echo /usr/libexec/amfid | $(INDEX) $(DB)
+	sqlite3 $(DB) ".dump"
+	rm $(DB)
+
+full:
+	$(SCAN) | $(INDEX) full.db
