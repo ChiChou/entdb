@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "mount.h": "c"
+        "mount.h": "c",
+        "parser.h": "c"
     }
 }

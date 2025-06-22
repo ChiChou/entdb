@@ -1,5 +1,5 @@
-#ifndef TOOL_H
-#define TOOL_H
+#ifndef COLLECTOR_SCAN_H
+#define COLLECTOR_SCAN_H
 
 #include <stdbool.h>
 
