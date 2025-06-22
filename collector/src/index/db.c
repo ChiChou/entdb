@@ -62,14 +62,6 @@ int db_init(context_t *ctx) {
                     "  xml TEXT,"
                     "  json TEXT,"
                     "  FOREIGN KEY (os_id) REFERENCES os(id)"
-                    ");"
-
-                    "CREATE TABLE IF NOT EXISTS pair ("
-                    "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    "  binary_id INTEGER NOT NULL,"
-                    "  key TEXT NOT NULL,"
-                    "  value TEXT,"
-                    "  FOREIGN KEY (binary_id) REFERENCES bin(id)"
                     ");";
 
   char *err_msg = 0;
@@ -161,22 +153,4 @@ sqlite3_int64 db_insert_bin(context_t *ctx, sqlite3_int64 os_id, bin_meta_t *inf
     id = -1;
 
   return id;
-}
-
-_Bool db_insert_pair(context_t *ctx, sqlite3_int64 binary_id, const char *key, const char *value) {
-  const char *sql = "INSERT INTO pair (binary_id, key, value) VALUES (?, ?, ?)";
-  sqlite3_stmt *stmt;
-
-  int rc = sqlite3_prepare_v2(ctx->db, sql, -1, &stmt, NULL);
-  if (rc != SQLITE_OK)
-    return false;
-
-  sqlite3_bind_int64(stmt, 1, binary_id);
-  sqlite3_bind_text(stmt, 2, key, -1, SQLITE_STATIC);
-  sqlite3_bind_text(stmt, 3, value, -1, SQLITE_STATIC);
-
-  rc = sqlite3_step(stmt);
-  sqlite3_finalize(stmt);
-
-  return rc == SQLITE_DONE;
 }

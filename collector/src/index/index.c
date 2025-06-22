@@ -93,7 +93,6 @@ static void handle(context_t *ctx, sqlite3_int64 os_id, const char *path) {
     info.json = json;
   }
 
-  /* sqlite3_int64 bin_id = */
   db_insert_bin(ctx, os_id, &info);
 
   free(info.path);
