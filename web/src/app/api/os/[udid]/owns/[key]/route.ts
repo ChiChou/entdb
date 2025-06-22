@@ -11,23 +11,15 @@ export async function GET(
 
   // I wanna know if this is sql injection safe 🤔
   const quotedKey = JSON.stringify(key);
+  const { results } = await DB.prepare(
+    `SELECT DISTINCT b.path FROM os AS o 
+      JOIN bin AS b ON o.id = b.os_id WHERE o.udid=? and json_extract(b.json, '$.${quotedKey}');`
+  ).bind(udid).all();
 
-  try {
-    const { results } = await DB.prepare(
-      `SELECT DISTINCT b.path FROM os AS o 
-        JOIN bin AS b ON o.id = b.os_id WHERE o.udid=? and json_extract(b.json, '$.${quotedKey}');`
-    ).bind(udid).all();
-
-    const textOnly = results.map((result) => result.path).join('\n');
-    return new Response(textOnly, {
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
-  } catch (error) {
-    return Response.json(
-      { error: 'Failed to fetch paths', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
-  }
+  const textOnly = results.map((result) => result.path).join('\n');
+  return new Response(textOnly, {
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  });
 }

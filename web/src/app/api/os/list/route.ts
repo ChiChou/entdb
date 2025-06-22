@@ -5,7 +5,7 @@ export const runtime = 'edge'
 export async function GET(): Promise<Response> {
   const { DB } = getRequestContext().env;
   const { results } = await DB.prepare(
-    `select distinct name, version, build, udid from os;`
+    `select name, version, build, udid from os;`
   ).all();
 
   return Response.json(results);
