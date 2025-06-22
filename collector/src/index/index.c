@@ -74,39 +74,26 @@ static void handle(context_t *ctx, sqlite3_int64 os_id, const char *path) {
   if (debug)
     CFShow(dict);
 
-  size_t size;
-  char *xml = entitlements_xml(path, &size);
+  char *xml = entitlements_xml(path, NULL);
   bin_meta_t info = {.path = strdup(path), .xml = NULL, .json = NULL};
 
   if (xml) {
-    if (debug) {
-      fprintf(stderr, "Entitlements as xml:\n");
-      write(STDOUT_FILENO, xml, size);
-      write(STDOUT_FILENO, "\n", 1);
-    }
+    if (debug)
+      fprintf(stderr, "Entitlements as xml:\n%s\n", xml);
 
-    char *s = malloc(size + 1);
-    if (!s)
-      abort();
-
-    memcpy(s, xml, size);
-    free(xml);
-
-    s[size] = '\0';
-    info.xml = s;
+    info.xml = xml;
   }
 
+  size_t size;
   char *json = to_json(dict, &size);
   if (json) {
-    if (debug) {
-      fprintf(stderr, "Entitlements as json:\n");
-      write(STDOUT_FILENO, json, size);
-      write(STDOUT_FILENO, "\n", 1);
-    }
+    if (debug)
+      fprintf(stderr, "Entitlements as json:\n%s\n", json);
 
     info.json = json;
   }
 
+  /* sqlite3_int64 bin_id = */
   db_insert_bin(ctx, os_id, &info);
 
   free(info.path);

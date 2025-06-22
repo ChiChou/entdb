@@ -31,7 +31,7 @@ typedef struct {
               // not fully compatible with plist
 } bin_meta_t;
 
-_Bool db_insert_bin(context_t *ctx, sqlite3_int64 os, bin_meta_t *info);
+sqlite3_int64 db_insert_bin(context_t *ctx, sqlite3_int64 os, bin_meta_t *info);
 _Bool db_insert_pair(context_t *ctx, sqlite3_int64 binary_id, const char *key, const char *value);
 
 #endif

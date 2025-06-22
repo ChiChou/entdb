@@ -39,5 +39,5 @@ test-index: all
 	sqlite3 $(DB) ".dump"
 	rm $(DB)
 
-full:
+full: all
 	$(SCAN) | $(INDEX) full.db

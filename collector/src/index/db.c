@@ -109,13 +109,14 @@ sqlite3_int64 db_insert_os(context_t *ctx, os_meta_t *md) {
   return id;
 }
 
-_Bool db_insert_bin(context_t *ctx, sqlite3_int64 os_id, bin_meta_t *info) {
+sqlite3_int64 db_insert_bin(context_t *ctx, sqlite3_int64 os_id, bin_meta_t *info) {
   const char *sql = "INSERT INTO bin (os_id, path, path_segments, xml, json) VALUES (?, ?, ?, ?, ?)";
   sqlite3_stmt *stmt;
+  sqlite3_int64 id;
 
   int rc = sqlite3_prepare_v2(ctx->db, sql, -1, &stmt, NULL);
   if (rc != SQLITE_OK)
-    return false;
+    return -1;
 
   // split path into segments by '/'
   char segments[PATH_MAX];
@@ -154,7 +155,12 @@ _Bool db_insert_bin(context_t *ctx, sqlite3_int64 os_id, bin_meta_t *info) {
   rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
 
-  return rc == SQLITE_DONE;
+  if (rc == SQLITE_DONE)
+    id = sqlite3_last_insert_rowid(ctx->db);
+  else
+    id = -1;
+
+  return id;
 }
 
 _Bool db_insert_pair(context_t *ctx, sqlite3_int64 binary_id, const char *key, const char *value) {

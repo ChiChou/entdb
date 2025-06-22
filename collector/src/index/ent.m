@@ -36,10 +36,13 @@ char *entitlements_xml(const char *path, size_t *size) {
     return NULL;
   CFDataRef data = CFPropertyListCreateData(kCFAllocatorDefault, dict, kCFPropertyListXMLFormat_v1_0, 0, NULL);
   if (data) {
-    p = malloc(CFDataGetLength(data));
+    size_t len = CFDataGetLength(data);
+    p = malloc(len + 1);
     if (p) {
-      memcpy(p, CFDataGetBytePtr(data), CFDataGetLength(data));
-      *size = CFDataGetLength(data);
+      memcpy(p, CFDataGetBytePtr(data), len);
+      p[len] = '\0';
+      if (size)
+        *size = len;
     }
     CFRelease(data);
   }

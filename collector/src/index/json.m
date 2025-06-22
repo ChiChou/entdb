@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 
 char *to_json(CFDictionaryRef dict, size_t *size) {
-  void *p;
+  char *p = NULL;
   @autoreleasepool {
     NSError *error = nil;
     NSData *json = [NSJSONSerialization dataWithJSONObject:(__bridge NSDictionary *)dict
@@ -13,9 +13,14 @@ char *to_json(CFDictionaryRef dict, size_t *size) {
       return NULL;
     }
 
-    p = malloc([json length]);
-    memcpy(p, [json bytes], [json length]);
-    *size = [json length];
+    size_t len = [json length];
+    p = malloc(len + 1);
+    if (p) {
+      memcpy(p, [json bytes], len);
+      p[len] = '\0';
+      if (size)
+        *size = len;
+    }
   }
   return p;
 }
