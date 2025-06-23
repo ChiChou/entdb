@@ -13,7 +13,8 @@ export async function GET(
   const quotedKey = JSON.stringify(key);
   const { results } = await DB.prepare(
     `SELECT DISTINCT b.path FROM os AS o 
-      JOIN bin AS b ON o.id = b.os_id WHERE o.udid=? and json_extract(b.json, '$.${quotedKey}');`
+      JOIN bin AS b ON o.id = b.os_id WHERE o.udid=? and 
+      json_extract(b.json, '$.${quotedKey}') not null;`
   ).bind(udid).all();
 
   const textOnly = results.map((result) => result.path).join('\n');
