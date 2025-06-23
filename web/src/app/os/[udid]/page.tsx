@@ -8,6 +8,8 @@ import SearchKey from '@/components/search-key';
 
 export const runtime = 'edge';
 
+type Params = Promise<{ udid: string }>
+
 async function fetchOS(udid: string): Promise<OSData> {
   const { DB } = getRequestContext().env;
   
@@ -22,8 +24,9 @@ async function fetchOS(udid: string): Promise<OSData> {
   return os as unknown as OSData;
 }
 
-export default async function OSPage({ params }: { params: { udid: string } }) {
-  const os = await fetchOS(params.udid);
+export default async function OSPage(props: { params: Params }) {
+  const { udid } = await props.params;
+  const os = await fetchOS(udid);
 
   return (
     <div className="min-h-screen p-8 font-[family-name:var(--font-geist-sans)]">
