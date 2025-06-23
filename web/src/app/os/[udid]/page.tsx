@@ -4,6 +4,8 @@ import { getRequestContext } from '@cloudflare/next-on-pages';
 
 import { OSData } from '@/types';
 
+import SearchKey from '@/components/search-key';
+
 export const runtime = 'edge';
 
 async function fetchOS(udid: string): Promise<OSData> {
@@ -40,6 +42,9 @@ export default async function OSPage({ params }: { params: { udid: string } }) {
             <h1 className="text-3xl font-bold mb-6">{os.name} {os.version} ({os.build})</h1>
             <p className="text-sm text-gray-500">{os.udid}</p>
           </header>
+
+          <SearchKey />
+
         </div>
       </div>
     </div>
