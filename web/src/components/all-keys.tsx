@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronsUpDown } from "lucide-react"
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Progress } from './loading';
 
@@ -33,6 +33,8 @@ export default function AllKeys({ value, setValue }: AllKeysProps) {
   const [open, setOpen] = useState(false);
 
   const { udid } = useParams();
+  const searchParams = useSearchParams();
+  const keyFromSearchQuery = searchParams.get('key');
 
   useEffect(() => {
     setLoading(true);
@@ -43,6 +45,18 @@ export default function AllKeys({ value, setValue }: AllKeysProps) {
         setLoading(false);
       });
   }, [udid]);
+
+  useEffect(() => {
+    if (keyFromSearchQuery)
+      setValue(keyFromSearchQuery);
+  }, [keyFromSearchQuery, setValue]);
+
+  useEffect(() => {
+    if (!value) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('key', value);
+    window.history.replaceState({}, '', url.toString());
+  }, [value]);
 
   return (
     <div className="space-y-4">
@@ -55,7 +69,7 @@ export default function AllKeys({ value, setValue }: AllKeysProps) {
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              className="w-[600px] justify-between"
+              className="w-full justify-between"
             >
               {value
                 ? keys.find((key) => key === value)
@@ -63,7 +77,7 @@ export default function AllKeys({ value, setValue }: AllKeysProps) {
               <ChevronsUpDown className="opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[600px] p-0">
+          <PopoverContent className="w-full p-0">
             <Command>
               <CommandInput placeholder="Search by entitlement..." className="h-9" />
               <CommandList>
