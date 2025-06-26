@@ -54,6 +54,11 @@ int db_init(context_t *ctx) {
                     "  version TEXT NOT NULL"
                     ");"
 
+                    "CREATE INDEX idx_os_ver ON os (version);"
+                    "CREATE INDEX idx_os_udid ON os (udid);"
+                    "CREATE INDEX idx_os_name ON os (name);"
+                    "CREATE INDEX idx_os_build ON os (build);"
+
                     "CREATE TABLE IF NOT EXISTS bin ("
                     "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
                     "  os_id INTEGER NOT NULL,"
@@ -61,8 +66,36 @@ int db_init(context_t *ctx) {
                     "  path_segments TEXT,"
                     "  xml TEXT,"
                     "  json TEXT,"
-                    "  FOREIGN KEY (os_id) REFERENCES os(id)"
-                    ");";
+                    "  FOREIGN KEY (os_id) REFERENCES os(id) ON DELETE CASCADE"
+                    ");"
+
+                    "CREATE INDEX idx_bin_os ON bin (os_id);"
+                    "CREATE INDEX idx_bin_path ON bin (path);"
+                    "CREATE INDEX idx_bin_xml ON bin (xml);"
+
+                    "CREATE TABLE IF NOT EXISTS pair ("
+                    "  bin_id INTEGER NOT NULL,"
+                    "  key TEXT NOT NULL,"
+                    "  value TEXT,"
+                    "  PRIMARY KEY (bin_id, key),"
+                    "  FOREIGN KEY (bin_id) REFERENCES bin(id) ON DELETE CASCADE"
+                    ");"
+
+                    "CREATE INDEX idx_pair_key ON pair (key);"
+                    "CREATE INDEX idx_pair_value ON pair (value);"
+
+                    "CREATE TRIGGER trg_insert_pair"
+                    "AFTER INSERT ON bin"
+                    "FOR EACH ROW"
+                    "BEGIN"
+                    "  INSERT INTO pair (bin_id, key, value)"
+                    "  SELECT"
+                    "    NEW.id,"
+                    "    json_each.key,"
+                    "    json_each.value"
+                    "  FROM"
+                    "    json_each(NEW.json);"
+                    "END;";
 
   char *err_msg = 0;
   int rc = sqlite3_exec(ctx->db, sql, 0, 0, &err_msg);

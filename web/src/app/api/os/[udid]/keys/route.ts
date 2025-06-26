@@ -1,23 +1,29 @@
-import { getRequestContext } from '@cloudflare/next-on-pages'
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
-export const runtime = 'edge'
+export const runtime = "edge";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ udid: string }> }
+  { params }: { params: Promise<{ udid: string }> },
 ): Promise<Response> {
   const { DB } = getRequestContext().env;
   const { udid } = await params;
+  const keyword = new URL(request.url).searchParams.get("k");
 
-  const { results } = await DB.prepare(
-    `SELECT DISTINCT key FROM os AS o JOIN bin AS b 
-      ON o.id = b.os_id, json_each(b.json) WHERE o.udid = ? ORDER BY key;`
-  ).bind(udid).all();
+  const tail = keyword ? `AND p.key glob ?` : "";
+  const sql = `SELECT DISTINCT p.key FROM pair AS p JOIN bin AS b ON
+      b.os_id = (SELECT id as os_id FROM os WHERE udid = ?) AND
+      p.bin_id = b.id ${tail};`;
 
-  const textOnly = results.map((result) => result.key).join('\n');
+  const statement = DB.prepare(sql);
+  const columns = [udid];
+  if (keyword) columns.push(`*${keyword}*`);
+
+  const { results } = await statement.bind(...columns).all();
+  const textOnly = results.map((result) => result.key).join("\n");
   return new Response(textOnly, {
     headers: {
-      'Content-Type': 'text/plain',
+      "Content-Type": "text/plain",
     },
   });
 }

@@ -10,7 +10,7 @@ export async function GET(
   const { udid } = await params;
 
   const { results } = await DB.prepare(
-    `SELECT DISTINCT b.path FROM os AS o JOIN bin AS b ON o.id = b.os_id WHERE o.udid = ?;`
+    `SELECT b.path FROM bin AS b where b.os_id = (SELECT id as os_id FROM os WHERE udid = ?);`
   ).bind(udid).all();
 
   const textOnly = results.map((result) => result.path).join('\n');
