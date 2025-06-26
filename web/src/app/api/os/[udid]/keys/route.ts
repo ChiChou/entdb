@@ -17,7 +17,11 @@ export async function GET(
 
   const statement = DB.prepare(sql);
   const columns = [udid];
-  if (keyword) columns.push(`*${keyword}*`);
+  if (keyword) {
+    // SQLITE_MAX_LIKE_PATTERN_LENGTH on cf is 50
+    // avoid "LIKE or GLOB pattern too complex"
+    columns.push(`*${keyword.slice(0, 50 - 2)}*`);
+  }
 
   const { results } = await statement.bind(...columns).all();
   const textOnly = results.map((result) => result.key).join("\n");
