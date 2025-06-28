@@ -49,6 +49,11 @@ void visit(const char *parent) {
       continue;
     }
 
+    if (S_ISLNK(statbuf.st_mode)) {
+      // skip symlinks
+      continue;
+    }
+
     if (S_ISDIR(statbuf.st_mode)) {
       if (is_valid_mount(path)) {
         visit(path);
