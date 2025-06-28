@@ -4,7 +4,6 @@ import { Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
@@ -20,7 +19,6 @@ type Props<T extends string> = {
   onSearchValueChange: (value: string) => void;
   items: { value: T; label: string }[];
   isLoading?: boolean;
-  emptyMessage?: string;
   placeholder?: string;
   focus?: boolean;
 };
@@ -32,7 +30,6 @@ export function AutoComplete<T extends string>({
   onSearchValueChange,
   items,
   isLoading,
-  emptyMessage = "No items.",
   placeholder = "Search...",
   focus = false,
 }: Props<T>) {
@@ -132,9 +129,6 @@ export function AutoComplete<T extends string>({
                     </CommandItem>
                   ))}
                 </CommandGroup>
-              ) : null}
-              {!isLoading ? (
-                <CommandEmpty className="w-full">{emptyMessage ?? "No items."}</CommandEmpty>
               ) : null}
             </CommandList>
           </PopoverContent>
