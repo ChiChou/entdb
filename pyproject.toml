@@ -1,0 +1,7 @@
+[project]
+name = "entdb-collector"
+version = "0.1.0"
+description = "data collector for iOS entitlement database"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
