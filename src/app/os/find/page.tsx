@@ -9,6 +9,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+import FileSystem from "@/components/filesystem";
+
 import { fetchLines } from "@/lib/client";
 import { addBasePath } from "@/lib/env";
 import Link from "next/link";
@@ -76,18 +78,7 @@ export default function FindByKey() {
         </p>
       ) : (
         <ul className="list-disc list-inside">
-          {paths.map((path, index) => (
-            <li key={index} className="font-mono break-all">
-              <Link
-                href={addBasePath(
-                  `/os/bin?os=${os}&path=${encodeURIComponent(path)}`,
-                )}
-                className="text-gray-600 hover:underline"
-              >
-                {path}
-              </Link>
-            </li>
-          ))}
+          <FileSystem os={os} list={paths} />
         </ul>
       )}
     </div>
