@@ -54,7 +54,7 @@ export default function FindByKey() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href={addBasePath(`/os/${os}`)}>
+              <BreadcrumbLink href={addBasePath(`/os?os=${os}`)}>
                 {os}
               </BreadcrumbLink>
             </BreadcrumbItem>

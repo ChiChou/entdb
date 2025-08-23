@@ -1,31 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { addBasePath } from "@/lib/env";
 import { fetchLines } from "@/lib/client";
 
 import FileSystem from "./filesystem";
 
 export default function Keys() {
-  const params = useParams();
+  const params = useSearchParams();
+  const os = params.get("os") as string;
+
   const [loading, setLoading] = useState(true);
   const [files, setFiles] = useState<string[]>([]);
 
   useEffect(() => {
     setLoading(true);
-    fetchLines(addBasePath(`/data/${params.id}/paths`))
+    fetchLines(addBasePath(`/data/${os}/paths`))
       .then(setFiles)
       .finally(() => setLoading(false));
-  }, [params.id]);
+  }, [os]);
 
   return (
     <div className="mt-8 text-left">
-      {loading ? (
-        <p>Loading</p>
-      ) : (
-        <FileSystem os={params.id as string} list={files} />
-      )}
+      {loading ? <p>Loading</p> : <FileSystem os={os} list={files} />}
     </div>
   );
 }

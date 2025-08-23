@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
 
@@ -10,7 +10,8 @@ import { escapeKey, fetchLines } from "@/lib/client";
 import { Input } from "@/components/ui/input";
 
 export default function Keys() {
-  const params = useParams();
+  const params = useSearchParams();
+  const os = params.get("os") as string;
 
   const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState<string[]>([]);
@@ -21,10 +22,10 @@ export default function Keys() {
 
   useEffect(() => {
     setLoading(true);
-    fetchLines(addBasePath(`/data/${params.id}/keys`))
+    fetchLines(addBasePath(`/data/${os}/keys`))
       .then(setKeys)
       .finally(() => setLoading(false));
-  }, [params.id]);
+  }, [os]);
 
   useEffect(() => {
     setFiltered(
@@ -59,7 +60,7 @@ export default function Keys() {
           {filtered.map((key, index) => (
             <li key={index} className="font-mono break-all text-sm">
               <Link
-                href={`/os/find?key=${escapeKey(key)}&os=${params.id}`}
+                href={`/find?key=${escapeKey(key)}&os=${os}`}
                 className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
               >
                 {key}

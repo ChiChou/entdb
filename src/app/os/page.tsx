@@ -1,24 +1,27 @@
-import { Metadata } from "next";
+"use client";
 
-import { fetchAllOS } from "@/lib/data";
+import { useSearchParams, redirect } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Keys from "@/components/keys";
 import Paths from "@/components/paths";
 
-export const metadata: Metadata = {
-  title: "OS Details",
-};
+export default function OSDetail() {
+  const params = useSearchParams();
+  const os = params.get("os");
+  const tab = params.get("path") || "keys";
 
-export async function generateStaticParams() {
-  const list = await fetchAllOS();
-  return list.map((os) => ({ id: os.id }));
-}
+  if (typeof os !== "string") {
+    return <div className="p-8">Invalid OS</div>;
+  }
 
-export default async function OSDetail() {
+  if (tab !== "keys" && tab !== "files") {
+    return redirect(`/os?os=${os}&tab=keys`);
+  }
+
   return (
     <div className="p-8">
-      <Tabs defaultValue="keys">
+      <Tabs defaultValue={tab} className="w-full">
         <TabsList>
           <TabsTrigger value="keys">Keys</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>

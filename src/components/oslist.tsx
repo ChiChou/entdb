@@ -53,7 +53,7 @@ export default function OSList() {
         {(filterEnabled ? filtered : list).map((os, index) => (
           <li key={index} className="list-none">
             <Link
-              href={`/os/${os.id}`}
+              href={`/os?os=${os.id}`}
               className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
             >
               <div className="flex justify-between items-center">

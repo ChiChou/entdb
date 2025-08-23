@@ -17,7 +17,7 @@ function Tree({ item, os }: { item: TreeWithFullPath; os: string }) {
           return (
             <li key={value} className="font-mono break-all text-sm m-2">
               <Link
-                href={`/os/bin?path=${encodeURIComponent(value)}&os=${os}`}
+                href={`/bin?path=${encodeURIComponent(value)}&os=${os}`}
                 className="hover:underline"
               >
                 {key}

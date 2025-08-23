@@ -98,7 +98,7 @@ export default function BinaryDetail() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href={addBasePath(`/os/${os}`)}>
+              <BreadcrumbLink href={addBasePath(`/os?os=${os}`)}>
                 {os}
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -149,7 +149,7 @@ export default function BinaryDetail() {
               {xmlKeys.map((key) => (
                 <li key={key}>
                   <Link
-                    href={`/os/find?os=${os}&key=${key}`}
+                    href={`/find?os=${os}&key=${key}`}
                     className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
                   >
                     {key}
