@@ -6,9 +6,12 @@ import { useEffect, useState } from "react";
 import { OS } from "@/lib/types";
 import { addBasePath } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
+import { Checkbox } from "./ui/checkbox";
 
 export default function OSList() {
   const [list, setList] = useState<OS[]>([]);
+  const [filterEnabled, setFilterEnabled] = useState(false);
+  const [filtered, setFiltered] = useState<OS[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,15 +25,32 @@ export default function OSList() {
     fetchData().finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    setFiltered(list.filter((os) => os.version.endsWith(".0")));
+  }, [list]);
+
   return (
     <div>
       {loading && <Skeleton className="h-[20px] w-[100px] rounded-full" />}
+
       {!loading && list.length === 0 && (
         <div className="text-center">Failed to fetch OS list</div>
       )}
 
+      <header className="mb-4">
+        <Checkbox
+          id="select-all"
+          className="mr-2"
+          checked={filterEnabled}
+          onCheckedChange={(checked) => setFilterEnabled(!!checked)}
+        />
+        <label htmlFor="select-all" className="text-lg font-medium">
+          Include Minor Versions
+        </label>
+      </header>
+
       <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {list.map((os, index) => (
+        {(filterEnabled ? filtered : list).map((os, index) => (
           <li key={index} className="list-none">
             <Link
               href={`/os/${os.id}`}
