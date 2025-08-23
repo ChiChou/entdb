@@ -36,19 +36,14 @@ export default function BinaryDetail() {
   const [xml, setXML] = useState<string | "">("");
   const [json, setJSON] = useState<Entitlements | null>(null);
   const [xmlKeys, setXMLKeys] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchPaths() {
       if (!os || !path) {
         setXML("");
-        setError("Missing os or key parameter");
         return;
       }
-      setError(null);
-      fetchText(`/data/${os}/fs${path}.xml`)
-        .then(setXML)
-        .catch(() => setError("Failed to fetch xml"));
+      fetchText(`/data/${os}/fs${path}.xml`).then(setXML);
     }
     fetchPaths();
   }, [os, path]);
@@ -57,20 +52,12 @@ export default function BinaryDetail() {
     async function fetchJSON() {
       if (!os || !path) {
         setJSON(null);
-        setError("Missing os or key parameter");
         return;
       }
-      setError(null);
-      fetchText(`/data/${os}/fs${path}.json`)
-        .then((text) => {
-          try {
-            const data = JSON.parse(text);
-            setJSON(data);
-          } catch (e) {
-            setError("Failed to parse json");
-          }
-        })
-        .catch(() => setError("Failed to fetch json"));
+      fetchText(`/data/${os}/fs${path}.json`).then((text) => {
+        const data = JSON.parse(text);
+        setJSON(data);
+      });
     }
     fetchJSON();
   }, [os, path]);
