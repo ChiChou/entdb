@@ -1,10 +1,12 @@
 import Link from "next/link";
 
+import { addBasePath } from "@/lib/env";
+
 export function NavTop() {
   return (
     <header className="flex flex-row justify-between items-center p-4 w-full bg-gray-900 text-white">
       <h1 className="text-2xl font-bold">
-        <Link href="/" className="hover:text-gray-300">
+        <Link href={addBasePath("/")} className="hover:text-gray-300">
           entdb
         </Link>
       </h1>

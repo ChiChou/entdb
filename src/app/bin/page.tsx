@@ -11,6 +11,7 @@ import { Breadcrumbs } from "@/components/breadcrumb-list";
 import { CopyButton } from "@/components/copy-button";
 
 import { fetchText } from "@/lib/client";
+import { addBasePath } from "@/lib/env";
 
 type leaf = string | number | boolean;
 
@@ -43,7 +44,7 @@ export default function BinaryDetail() {
         setXML("");
         return;
       }
-      fetchText(`/data/${os}/fs${path}.xml`).then(setXML);
+      fetchText(addBasePath(`/data/${os}/fs${path}.xml`)).then(setXML);
     }
     fetchPaths();
   }, [os, path]);
@@ -54,7 +55,7 @@ export default function BinaryDetail() {
         setJSON(null);
         return;
       }
-      fetchText(`/data/${os}/fs${path}.json`).then((text) => {
+      fetchText(addBasePath(`/data/${os}/fs${path}.json`)).then((text) => {
         const data = JSON.parse(text);
         setJSON(data);
       });

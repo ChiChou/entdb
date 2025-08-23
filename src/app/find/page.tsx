@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumb-list";
 import FileSystem from "@/components/filesystem";
 
 import { fetchLines } from "@/lib/client";
+import { addBasePath } from "@/lib/env";
 
 import { redirect, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,7 +32,7 @@ export default function FindByKey() {
         setPaths([]);
         return;
       }
-      fetchLines(`/data/${os}/search/${key}`).then(setPaths);
+      fetchLines(addBasePath(`/data/${os}/search/${key}`)).then(setPaths);
     }
     fetchPaths();
   }, [os, key]);
