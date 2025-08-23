@@ -13,6 +13,12 @@ export default function FindByKey() {
   const os = params.get("os");
   const key = params.get("key");
 
+  useEffect(() => {
+    if (os && key) {
+      document.title = `Find "${key}" in ${os} - Entitlement Database`;
+    }
+  });
+
   if (typeof os !== "string" || typeof key !== "string") {
     redirect("/404");
   }

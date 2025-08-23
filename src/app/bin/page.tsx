@@ -23,6 +23,12 @@ export default function BinaryDetail() {
   const os = params.get("os");
   const path = params.get("path");
 
+  useEffect(() => {
+    if (os && path) {
+      document.title = `${path} | ${os} - Entitlement Database`;
+    }
+  });
+
   if (typeof os !== "string" || typeof path !== "string") {
     redirect("/404");
   }

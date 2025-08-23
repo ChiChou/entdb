@@ -14,7 +14,7 @@ export default function OSDetail() {
   const tab = params.get("path") || "keys";
 
   useEffect(() => {
-    document.title = os || "Entitlement Database";
+    document.title = `${os || ""} - Entitlement Database`;
   }, [os]);
 
   useEffect(() => {
