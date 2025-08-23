@@ -1,4 +1,4 @@
-import { fetchAllOS } from "@/lib/server";
+import { fetchAllOS } from "@/lib/data";
 
 export const dynamic = "force-static";
 

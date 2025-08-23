@@ -3,26 +3,29 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { addBasePath } from "@/lib/env";
-import { splitLines } from "@/lib/client";
+import { fetchLines } from "@/lib/client";
 
 export default function Keys() {
   const params = useParams();
+
+  const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(addBasePath(`/data/${params.id}/keys`)).then((r) =>
-      r.text().then(splitLines).then(setKeys),
-    );
-  });
+    setLoading(true);
+    fetchLines(addBasePath(`/data/${params.id}/keys`))
+      .then(setKeys)
+      .finally(() => setLoading(false));
+  }, [params.id]);
 
   return (
     <div className="mt-8 text-left">
-      {keys.length === 0 ? (
+      {loading ? (
         <p>Loading</p>
       ) : (
         <ul className="list-disc list-inside">
           {keys.map((key, index) => (
-            <li key={index} className="font-mono break-all">
+            <li key={index} className="font-mono break-all text-sm">
               {key}
             </li>
           ))}

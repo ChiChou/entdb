@@ -3,27 +3,29 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { addBasePath } from "@/lib/env";
-import { splitLines } from "@/lib/client";
+import { fetchLines } from "@/lib/client";
 
 export default function Keys() {
   const params = useParams();
+  const [loading, setLoading] = useState(true);
   const [files, setFiles] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(addBasePath(`/data/${params.id}/paths`)).then((r) =>
-      r.text().then(splitLines).then(setFiles),
-    );
-  });
+    setLoading(true);
+    fetchLines(addBasePath(`/data/${params.id}/paths`))
+      .then(setFiles)
+      .finally(() => setLoading(false));
+  }, [params.id]);
 
   return (
     <div className="mt-8 text-left">
-      {files.length === 0 ? (
+      {loading ? (
         <p>Loading</p>
       ) : (
         <ul className="list-disc list-inside">
-          {files.map((key, index) => (
-            <li key={index} className="font-mono break-all">
-              {key}
+          {files.map((path, index) => (
+            <li key={index} className="font-mono break-all text-sm">
+              {path}
             </li>
           ))}
         </ul>
