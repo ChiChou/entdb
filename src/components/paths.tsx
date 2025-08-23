@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { addBasePath } from "@/lib/env";
 import { fetchLines } from "@/lib/client";
 
+import FileSystem from "./filesystem";
+
 export default function Keys() {
   const params = useParams();
   const [loading, setLoading] = useState(true);
@@ -22,13 +24,7 @@ export default function Keys() {
       {loading ? (
         <p>Loading</p>
       ) : (
-        <ul className="list-disc list-inside">
-          {files.map((path, index) => (
-            <li key={index} className="font-mono break-all text-sm">
-              {path}
-            </li>
-          ))}
-        </ul>
+        <FileSystem os={params.id as string} list={files} />
       )}
     </div>
   );
