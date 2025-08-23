@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { NavTop } from "@/components/navtop";
 import { Toaster } from "@/components/ui/sonner";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,9 @@ export default function RootLayout({
       >
         <NavTop />
         <Toaster />
-        <main className="flex flex-col">{children}</main>
+        <Suspense>
+          <main className="flex flex-col">{children}</main>
+        </Suspense>
       </body>
     </html>
   );
