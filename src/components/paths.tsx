@@ -7,21 +7,21 @@ import { splitLines } from "@/lib/client";
 
 export default function Keys() {
   const params = useParams();
-  const [keys, setKeys] = useState<string[]>([]);
+  const [files, setFiles] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(addBasePath(`/data/${params.id}/keys`)).then((r) =>
-      r.text().then(splitLines).then(setKeys),
+    fetch(addBasePath(`/data/${params.id}/paths`)).then((r) =>
+      r.text().then(splitLines).then(setFiles),
     );
   });
 
   return (
     <div className="mt-8 text-left">
-      {keys.length === 0 ? (
+      {files.length === 0 ? (
         <p>Loading</p>
       ) : (
         <ul className="list-disc list-inside">
-          {keys.map((key, index) => (
+          {files.map((key, index) => (
             <li key={index} className="font-mono break-all">
               {key}
             </li>
