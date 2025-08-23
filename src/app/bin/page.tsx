@@ -7,20 +7,10 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-
+import { Breadcrumbs } from "@/components/breadcrumb-list";
 import { CopyButton } from "@/components/copy-button";
 
 import { fetchText } from "@/lib/client";
-import { addBasePath } from "@/lib/env";
 
 type leaf = string | number | boolean;
 
@@ -90,27 +80,9 @@ export default function BinaryDetail() {
 
   return (
     <div className="p-8">
-      <header className="mb-8">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href={addBasePath(`/os?os=${os}`)}>
-                {os}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>
-                <code className="text-red-800">{path}</code>
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </header>
+      <Breadcrumbs os={os}>
+        <code className="text-red-800">{path}</code>
+      </Breadcrumbs>
 
       <main className="space-y-6">
         <Tabs defaultValue="xml">
