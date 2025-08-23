@@ -1,12 +1,4 @@
-function getBasePath() {
-  if ("NEXT_PUBLIC_BASE_PATH" in process.env) {
-    return process.env.NEXT_PUBLIC_BASE_PATH;
-  }
-
-  return "";
-}
-
-export const basePath = getBasePath();
+export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export function addBasePath(path: string) {
   let prefixed = path;
