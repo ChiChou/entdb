@@ -1,5 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { redirect, useSearchParams } from "next/navigation";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,10 +17,16 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { fetchLines, fetchText } from "@/lib/client";
+import { CopyButton } from "@/components/copy-button";
+
+import { fetchText } from "@/lib/client";
 import { addBasePath } from "@/lib/env";
-import { redirect, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+
+type leaf = string | number | boolean;
+
+interface Entitlements {
+  [key: string]: leaf | Entitlements | leaf[];
+}
 
 export default function BinaryDetail() {
   const params = useSearchParams();
@@ -23,7 +37,9 @@ export default function BinaryDetail() {
     redirect("/404");
   }
 
-  const [xml, setXML] = useState<string | null>(null);
+  const [xml, setXML] = useState<string | "">("");
+  const [json, setJSON] = useState<Entitlements | null>(null);
+  const [xmlKeys, setXMLKeys] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +56,37 @@ export default function BinaryDetail() {
     }
     fetchPaths();
   }, [os, path]);
+
+  useEffect(() => {
+    async function fetchJSON() {
+      if (!os || !path) {
+        setJSON(null);
+        setError("Missing os or key parameter");
+        return;
+      }
+      setError(null);
+      fetchText(`/data/${os}/fs${path}.json`)
+        .then((text) => {
+          try {
+            const data = JSON.parse(text);
+            setJSON(data);
+          } catch (e) {
+            setError("Failed to parse json");
+          }
+        })
+        .catch(() => setError("Failed to fetch json"));
+    }
+    fetchJSON();
+  }, [os, path]);
+
+  useEffect(() => {
+    if (json) {
+      const keys = Object.keys(json).sort();
+      setXMLKeys(keys);
+    } else {
+      setXMLKeys([]);
+    }
+  }, [json]);
 
   return (
     <div className="p-8">
@@ -65,7 +112,54 @@ export default function BinaryDetail() {
         </Breadcrumb>
       </header>
 
-      {xml}
+      <main className="space-y-6">
+        <Tabs defaultValue="xml">
+          <TabsList>
+            <TabsTrigger value="xml">Content</TabsTrigger>
+            <TabsTrigger value="json">Keys</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="xml">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold">XML</h2>
+              <CopyButton text={xml} />
+            </div>
+
+            <SyntaxHighlighter
+              language="xml"
+              showLineNumbers={true}
+              style={tomorrow}
+              customStyle={{
+                margin: 0,
+                borderRadius: "0.5rem",
+                fontSize: "0.875rem",
+              }}
+              lineProps={{
+                onClick: (line) => {
+                  console.log(line);
+                },
+              }}
+            >
+              {xml}
+            </SyntaxHighlighter>
+          </TabsContent>
+
+          <TabsContent value="json">
+            <ul className="grid sm:grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
+              {xmlKeys.map((key) => (
+                <li key={key}>
+                  <Link
+                    href={`/os/find?os=${os}&key=${key}`}
+                    className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
+                  >
+                    {key}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 }
