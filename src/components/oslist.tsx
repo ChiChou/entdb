@@ -10,7 +10,7 @@ import { Checkbox } from "./ui/checkbox";
 
 export default function OSList() {
   const [list, setList] = useState<OS[]>([]);
-  const [filterEnabled, setFilterEnabled] = useState(true);
+  const [includeMinorVersions, setIncludeMinorVersions] = useState(true);
   const [filtered, setFiltered] = useState<OS[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,8 +41,10 @@ export default function OSList() {
         <Checkbox
           id="select-all"
           className="mr-2"
-          checked={filterEnabled}
-          onCheckedChange={(checked) => setFilterEnabled(!!checked)}
+          checked={includeMinorVersions}
+          onCheckedChange={(checked) =>
+            setIncludeMinorVersions(Boolean(checked))
+          }
         />
         <label htmlFor="select-all" className="text-lg font-medium">
           Include Minor Versions
@@ -50,7 +52,7 @@ export default function OSList() {
       </header>
 
       <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {(filterEnabled ? filtered : list).map((os, index) => (
+        {(includeMinorVersions ? list : filtered).map((os, index) => (
           <li key={index} className="list-none">
             <Link
               href={`/os?os=${os.id}`}
