@@ -25,40 +25,34 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Download data set
         run: |
           curl -L -o data.tar.gz https://github.com/ChiChou/entdb/releases/download/initial/iOS.tar.gz
           mkdir -p public/data
           tar -xzf data.tar.gz -C public/data
 
-      - name: Build static site
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
         with:
-          name: build-files
-          path: out/
-          retention-days: 1
+          static_site_generator: next
+      - name: Install dependencies
+        run: npm ci
+      - name: Build with Next.js
+        run: npm run build
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
 
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-files
-          path: out/
-
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: out
-          publish_branch: gh-pages
+        id: deployment
+        uses: actions/deploy-pages@v4
