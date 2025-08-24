@@ -67,9 +67,8 @@ def worker(dbfile: Path):
     for path_id in paths:
         path_str = paths[path_id]
 
-        child = PosixPath(paths[path_id].lstrip('/'))
-        xml_file = root / "fs" / child.with_suffix('.xml')
-        xml_file.parent.mkdir(parents=True, exist_ok=True)
+        plist_file = root / "fs" / PosixPath(paths[path_id].lstrip('/') + '.plist')
+        plist_file.parent.mkdir(parents=True, exist_ok=True)
 
         rows = cursor.execute(
             '''select ek.key, ev.value, ev.value_type from entitlements as ent
@@ -88,10 +87,10 @@ def worker(dbfile: Path):
                 case "array", "dict":
                     ent[key] = json.loads(value)
 
-        with xml_file.open('wb') as f:
+        with plist_file.open('wb') as f:
             plistlib.dump(ent, f, fmt=plistlib.FMT_XML)
 
-        json_file = xml_file.with_suffix('.json')
+        json_file = plist_file.with_suffix('.json')
         with json_file.open('w') as f:
             json.dump(ent, f, indent=4)
 
