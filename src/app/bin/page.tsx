@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { redirect, useSearchParams } from "next/navigation";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  createElement,
+  Prism as SyntaxHighlighter,
+} from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumbs } from "@/components/breadcrumb-list";
 import { CopyButton } from "@/components/copy-button";
 
 import { addBasePath } from "@/lib/env";
 import { create } from "@/lib/kv";
 
-type leaf = string | number | boolean;
+// type leaf = string | number | boolean;
 
-interface Entitlements {
-  [key: string]: leaf | Entitlements | leaf[];
-}
+// interface Entitlements {
+//   [key: string]: leaf | Entitlements | leaf[];
+// }
 
 export default function BinaryDetail() {
   const params = useSearchParams();
@@ -35,8 +36,7 @@ export default function BinaryDetail() {
   }
 
   const [xml, setXML] = useState<string | "">("");
-  const [json, setJSON] = useState<Entitlements | null>(null);
-  const [xmlKeys, setXMLKeys] = useState<string[]>([]);
+  const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function load() {
@@ -49,77 +49,84 @@ export default function BinaryDetail() {
       }
 
       const xml = blob.substring(0, location + 8);
-      setXML(xml);
+      const json = JSON.parse(blob.substring(location + 8));
 
-      const json = blob.substring(location + 8);
-      setJSON(JSON.parse(json));
+      setXML(xml);
+      setXMLKeys(new Set(Object.keys(json)));
     }
 
     load();
   }, [os, path]);
 
-  useEffect(() => {
-    if (json) {
-      const keys = Object.keys(json).sort();
-      setXMLKeys(keys);
-    } else {
-      setXMLKeys([]);
-    }
-  }, [json]);
-
   return (
     <div className="p-8">
       <Breadcrumbs os={os}>
-        <code className="text-red-800">{path}</code>
+        <code className="text-red-800 break-all">{path}</code>
       </Breadcrumbs>
 
       <main className="space-y-6">
-        <Tabs defaultValue="xml">
-          <TabsList>
-            <TabsTrigger value="xml">Content</TabsTrigger>
-            <TabsTrigger value="json">Keys</TabsTrigger>
-          </TabsList>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold">XML</h2>
+          <CopyButton text={xml} />
+        </div>
 
-          <TabsContent value="xml">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-semibold">XML</h2>
-              <CopyButton text={xml} />
-            </div>
+        <SyntaxHighlighter
+          language="xml"
+          showLineNumbers={true}
+          style={tomorrow}
+          customStyle={{
+            margin: 0,
+            borderRadius: "0.5rem",
+            fontSize: "0.875rem",
+          }}
+          renderer={({ rows, stylesheet, useInlineStyles }) => {
+            function addLink(node: rendererNode) {
+              if (node.type === "text" && xmlKeys.has(node.value as string)) {
+                return {
+                  type: "element",
+                  tagName: "span",
+                  children: [
+                    {
+                      type: "element",
+                      tagName: "a",
+                      children: [
+                        {
+                          type: "text",
+                          value: node.value as string,
+                        } as rendererNode,
+                      ],
+                      properties: {
+                        className: ["text-blue-200", "hover:underline"],
+                        href: addBasePath(
+                          `/find?key=${encodeURIComponent(
+                            node.value as string,
+                          )}&os=${encodeURIComponent(os!)}`,
+                        ),
+                      },
+                    } as rendererNode,
+                  ],
+                  properties: { className: ["linked-key"] },
+                } as rendererNode;
+              }
 
-            <SyntaxHighlighter
-              language="xml"
-              showLineNumbers={true}
-              style={tomorrow}
-              customStyle={{
-                margin: 0,
-                borderRadius: "0.5rem",
-                fontSize: "0.875rem",
-              }}
-              lineProps={{
-                onClick: (line) => {
-                  console.log(line);
-                },
-              }}
-            >
-              {xml}
-            </SyntaxHighlighter>
-          </TabsContent>
+              if (node.children) {
+                node.children = node.children.map(addLink);
+              }
+              return node;
+            }
 
-          <TabsContent value="json">
-            <ul className="grid sm:grid-cols-1 lg:grid-cols-2 gap-2 mt-4">
-              {xmlKeys.map((key) => (
-                <li key={key}>
-                  <Link
-                    href={`/find?os=${os}&key=${key}`}
-                    className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
-                  >
-                    {key}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </TabsContent>
-        </Tabs>
+            return rows.map((row, i) => {
+              return createElement({
+                node: addLink(row),
+                stylesheet,
+                useInlineStyles,
+                key: `code-segment-${i}`,
+              });
+            });
+          }}
+        >
+          {xml}
+        </SyntaxHighlighter>
       </main>
     </div>
   );
