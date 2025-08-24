@@ -25,12 +25,6 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Download data set
-        run: |
-          curl -L -o data.tar.gz https://github.com/ChiChou/entdb/releases/download/initial/iOS.tar.gz
-          mkdir -p public/data
-          tar -xzf data.tar.gz -C public/data
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
         id: configure-pages
@@ -55,6 +49,12 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path }}
+
+      - name: Download data set
+        run: |
+          curl -L -o data.tar.gz https://github.com/ChiChou/entdb/releases/download/initial/iOS.tar.gz
+          mkdir -p out/data
+          tar -xzf data.tar.gz -C out/data
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

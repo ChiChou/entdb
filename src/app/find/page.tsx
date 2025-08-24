@@ -3,7 +3,7 @@
 import { Breadcrumbs } from "@/components/breadcrumb-list";
 import FileSystem from "@/components/filesystem";
 
-import { fetchLines } from "@/lib/client";
+import { escapeKey, fetchLines } from "@/lib/client";
 import { addBasePath } from "@/lib/env";
 
 import { redirect, useSearchParams } from "next/navigation";

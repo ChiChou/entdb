@@ -15,14 +15,18 @@ export default function OSList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
-      const res = await fetch(addBasePath("/api/os"));
-      const data = await res.json();
-      setList(data);
-    }
-
     setLoading(true);
-    fetchData().finally(() => setLoading(false));
+    fetch(addBasePath("/data/list"))
+      .then((r) => r.text())
+      .then((txt) => {
+        const lines = txt.split("\n").filter((line) => line.trim() !== "");
+        return lines.map((id) => {
+          const [version, build] = id.split("_");
+          return { id, version, build };
+        });
+      })
+      .then(setList)
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
