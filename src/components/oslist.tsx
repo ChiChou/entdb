@@ -17,6 +17,12 @@ export default function OSList() {
   useEffect(() => {
     setLoading(true);
     fetch(addBasePath("/data/list"))
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error("Failed to fetch OS list");
+        }
+        return r;
+      })
       .then((r) => r.text())
       .then((txt) => {
         const lines = txt.split("\n").filter((line) => line.trim() !== "");
