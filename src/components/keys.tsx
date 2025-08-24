@@ -6,8 +6,8 @@ import { useDebounce } from "use-debounce";
 import Link from "next/link";
 
 import { addBasePath } from "@/lib/env";
-import { escapeKey, fetchLines } from "@/lib/client";
 import { Input } from "@/components/ui/input";
+import { create } from "@/lib/kv";
 
 export default function Keys() {
   const params = useSearchParams();
@@ -21,10 +21,14 @@ export default function Keys() {
   const [value] = useDebounce(keyword, 200);
 
   useEffect(() => {
+    async function load() {
+      const reader = await create(addBasePath(`/data/${os}/keys`));
+
+      setKeys([...reader.keys()]);
+    }
+
     setLoading(true);
-    fetchLines(addBasePath(`/data/${os}/keys`))
-      .then(setKeys)
-      .finally(() => setLoading(false));
+    load().finally(() => setLoading(false));
   }, [os]);
 
   useEffect(() => {
@@ -60,7 +64,7 @@ export default function Keys() {
           {filtered.map((key, index) => (
             <li key={index} className="font-mono break-all text-sm">
               <Link
-                href={`/find?key=${escapeKey(key)}&os=${os}`}
+                href={`/find?key=${key}&os=${os}`}
                 className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
               >
                 {key}

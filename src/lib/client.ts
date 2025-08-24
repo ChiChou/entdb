@@ -13,14 +13,3 @@ function splitLines(text: string): string[] {
 export async function fetchLines(url: string | URL): Promise<string[]> {
   return splitLines(await fetchText(url));
 }
-
-export function escapeKey(name: string) {
-  const allowedRegex = /[a-zA-Z0-9_.-]/;
-  return Array.from(name)
-    .map((c) =>
-      allowedRegex.test(c)
-        ? c
-        : `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`,
-    )
-    .join("");
-}

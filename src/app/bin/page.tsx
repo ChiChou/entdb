@@ -10,8 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumbs } from "@/components/breadcrumb-list";
 import { CopyButton } from "@/components/copy-button";
 
-import { fetchText } from "@/lib/client";
 import { addBasePath } from "@/lib/env";
+import { create } from "@/lib/kv";
 
 type leaf = string | number | boolean;
 
@@ -39,24 +39,23 @@ export default function BinaryDetail() {
   const [xmlKeys, setXMLKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    async function fetchXML() {
-      fetchText(addBasePath(`/data/${os}/fs${path}.plist`)).then(setXML);
+    async function load() {
+      const reader = await create(addBasePath(`/data/${os!}/blobs`));
+      const blob = await reader.get(path!);
+
+      const location = blob.search(/<\/plist>\s*{/i);
+      if (location === -1) {
+        throw new Error(`Invalid blob response ${blob}`);
+      }
+
+      const xml = blob.substring(0, location + 8);
+      setXML(xml);
+
+      const json = blob.substring(location + 8);
+      setJSON(JSON.parse(json));
     }
 
-    async function fetchJSON() {
-      fetch(addBasePath(`/data/${os}/fs${path}.json`))
-        .then((r) => {
-          if (!r.ok && r.status === 404) {
-            throw new Error(`file ${path} does not exist`);
-          }
-          return r;
-        })
-        .then((r) => r.json())
-        .then(setJSON);
-    }
-
-    fetchJSON();
-    fetchXML();
+    load();
   }, [os, path]);
 
   useEffect(() => {

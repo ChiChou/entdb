@@ -3,8 +3,8 @@
 import { Breadcrumbs } from "@/components/breadcrumb-list";
 import FileSystem from "@/components/filesystem";
 
-import { escapeKey, fetchLines } from "@/lib/client";
 import { addBasePath } from "@/lib/env";
+import { create } from "@/lib/kv";
 
 import { redirect, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,13 +28,12 @@ export default function FindByKey() {
 
   useEffect(() => {
     async function fetchPaths() {
-      if (!os || !key) {
-        setPaths([]);
-        return;
-      }
-      fetchLines(
-        addBasePath(`/data/${os}/search/${encodeURIComponent(escapeKey(key))}`),
-      ).then(setPaths);
+      if (!key) return;
+
+      const reader = await create(addBasePath(`/data/${os}/keys`));
+
+      const lines = await reader.get(key);
+      setPaths(lines.split("\n").filter(Boolean));
     }
     fetchPaths();
   }, [os, key]);
