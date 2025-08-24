@@ -1,18 +1,41 @@
-from pathlib import Path, PosixPath
+from pathlib import Path
 from multiprocessing import Pool
 import sqlite3
 import plistlib
 import json
-import string
 
 dbs = Path('sqlite')
 output = Path('output')
 output.mkdir(exist_ok=True)
 
 
-def escape_key(name: str):
-    allowed = string.ascii_letters + string.digits + "_.-"
-    return ''.join(c if c in allowed else f'%{ord(c):02x}' for c in name)
+class KVStore:
+    def __init__(self, records_path: Path, data_path: Path):
+        self.records_path = records_path
+        self.data_file = data_path.open('wb')
+        self.cursor = 0
+
+        self.records = []
+        self.known_keys = set()
+
+    def add(self, key: str, value: bytes):
+        if key in self.known_keys:
+            raise ValueError(f"Duplicate key {key}")
+
+        self.records.append((key, self.cursor, len(value)))
+        self.data_file.write(value)
+        self.cursor += len(value)
+
+    def close(self):
+        with self.records_path.open('w') as fp:
+            json.dump(self.records, fp, separators=(',', ':'))
+        self.data_file.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
 
 def worker(dbfile: Path):
@@ -35,9 +58,6 @@ def worker(dbfile: Path):
     with (root / "paths").open('w') as fp:
         fp.write('\n'.join(path_list))
 
-    search = root / "search"
-    search.mkdir(exist_ok=True)
-
     keys = {}
     rows = cursor.execute('select id, key from entitlement_keys order by key;')
     for row in rows:
@@ -46,53 +66,42 @@ def worker(dbfile: Path):
             keys[key_id] = key
 
     # dump keys
-    with (root / "keys").open('w') as fp:
+    with KVStore(root / "keys-index.json", root / "keys.bin") as kv_keys:
         for key_id in keys:
             key = keys[key_id]
 
-            fp.write(key)
-            fp.write('\n')
+            rows = cursor.execute(
+                '''select p.path from paths as p join entitlements as e join entitlement_keys as ek
+                    on p.id==e.path_id and e.key_id == ek.id where ek.id=? order by p.path;''', (key_id,))
 
-            with (search / escape_key(key)).open('w') as f2:
-                rows = cursor.execute(
-                    '''select p.path from paths as p join entitlements as e join entitlement_keys as ek
-                        on p.id==e.path_id and e.key_id == ek.id where ek.id=? order by p.path;''', (key_id,))
-
-                for row in rows:
-                    path, = row
-                    f2.write(path)
-                    f2.write('\n')
+            files = [row[0] for row in rows]
+            blob = '\n'.join(files).encode('utf-8')
+            kv_keys.add(key, blob)
 
 
-    for path_id in paths:
-        path_str = paths[path_id]
+    with KVStore(root / "blobs-index.json", root / "blobs.bin") as kv_blobs:
+        for path_id in paths:
+            path_str = paths[path_id]
+            rows = cursor.execute(
+                '''select ek.key, ev.value, ev.value_type from entitlements as ent
+                join entitlement_keys as ek on ent.key_id == ek.id
+                join entitlement_values as ev on ent.value_id == ev.id
+                where ent.path_id == ?;''', (path_id,))
 
-        plist_file = root / "fs" / PosixPath(paths[path_id].lstrip('/') + '.plist')
-        plist_file.parent.mkdir(parents=True, exist_ok=True)
+            ent = {}
+            for row in rows:
+                key, value, value_type = row
+                match value_type:
+                    case "bool":
+                        ent[key] = bool(value)
+                    case "string":
+                        ent[key] = value
+                    case "array", "dict":
+                        ent[key] = json.loads(value)
 
-        rows = cursor.execute(
-            '''select ek.key, ev.value, ev.value_type from entitlements as ent
-            join entitlement_keys as ek on ent.key_id == ek.id
-            join entitlement_values as ev on ent.value_id == ev.id
-            where ent.path_id == ?;''', (path_id,))
-
-        ent = {}
-        for row in rows:
-            key, value, value_type = row
-            match value_type:
-                case "bool":
-                    ent[key] = bool(value)
-                case "string":
-                    ent[key] = value
-                case "array", "dict":
-                    ent[key] = json.loads(value)
-
-        with plist_file.open('wb') as f:
-            plistlib.dump(ent, f, fmt=plistlib.FMT_XML)
-
-        json_file = plist_file.with_suffix('.json')
-        with json_file.open('w') as f:
-            json.dump(ent, f, indent=4)
+            xml_blob = plistlib.dumps(ent, fmt=plistlib.FMT_XML)
+            json_blob = json.dumps(ent, separators=(',', ':')).encode('utf-8')
+            kv_blobs.add(path_str, xml_blob + json_blob)
 
 
 def main():
