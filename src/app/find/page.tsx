@@ -32,7 +32,9 @@ export default function FindByKey() {
         setPaths([]);
         return;
       }
-      fetchLines(addBasePath(`/data/${os}/search/${key}`)).then(setPaths);
+      fetchLines(
+        addBasePath(`/data/${os}/search/${encodeURIComponent(escapeKey(key))}`),
+      ).then(setPaths);
     }
     fetchPaths();
   }, [os, key]);
