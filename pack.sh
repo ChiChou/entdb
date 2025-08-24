@@ -1,6 +1,6 @@
 #!/bin/zsh
-rm output/list
-ls output > output/list
+ls output > list
+mv list output/
 pushd output
 tar -cvzf ../iOS.tar.gz *
 popd
