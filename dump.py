@@ -96,8 +96,8 @@ def worker(dbfile: Path):
 
 
 def main():
-    pool = Pool()
-    pool.map(worker, dbs.glob('*.db'))
+    with Pool() as pool:
+        pool.map(worker, dbs.glob('*.db'))
 
 
 if __name__ == '__main__':
