@@ -39,28 +39,24 @@ export default function BinaryDetail() {
   const [xmlKeys, setXMLKeys] = useState<string[]>([]);
 
   useEffect(() => {
-    async function fetchPaths() {
-      if (!os || !path) {
-        setXML("");
-        return;
-      }
-      fetchText(addBasePath(`/data/${os}/fs${path}.xml`)).then(setXML);
+    async function fetchXML() {
+      fetchText(addBasePath(`/data/${os}/fs${path}.plist`)).then(setXML);
     }
-    fetchPaths();
-  }, [os, path]);
 
-  useEffect(() => {
     async function fetchJSON() {
-      if (!os || !path) {
-        setJSON(null);
-        return;
-      }
-      fetchText(addBasePath(`/data/${os}/fs${path}.json`)).then((text) => {
-        const data = JSON.parse(text);
-        setJSON(data);
-      });
+      fetch(addBasePath(`/data/${os}/fs${path}.json`))
+        .then((r) => {
+          if (!r.ok && r.status === 404) {
+            throw new Error(`file ${path} does not exist`);
+          }
+          return r;
+        })
+        .then((r) => r.json())
+        .then(setJSON);
     }
+
     fetchJSON();
+    fetchXML();
   }, [os, path]);
 
   useEffect(() => {
