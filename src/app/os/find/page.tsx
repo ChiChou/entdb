@@ -1,6 +1,5 @@
 "use client";
 
-import { Breadcrumbs } from "@/components/breadcrumb-list";
 import FileSystem from "@/components/filesystem";
 
 import { addBasePath } from "@/lib/env";
@@ -39,14 +38,16 @@ export default function FindByKey() {
   }, [os, key]);
 
   return (
-    <div className="p-8">
-      <header className="mb-4">
-        <Breadcrumbs os={os}>
-          <code className="text-red-800">{key}</code>
-        </Breadcrumbs>
+    <div>
+      <header>
+        <h1 className="text-gray-800">
+          Binaries that have the following entitlement:
+        </h1>
+        <p>
+          <code className="text-sm break-all text-red-700">{key}</code>
+        </p>
       </header>
-
-      <FileSystem os={os} list={paths} />
+      <FileSystem os={os} list={paths} />;
     </div>
   );
 }

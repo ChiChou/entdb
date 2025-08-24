@@ -22,7 +22,7 @@ export default function Keys() {
   }, [os]);
 
   return (
-    <div className="mt-8 text-left">
+    <div className="text-left">
       {loading ? <p>Loading</p> : <FileSystem os={os} list={files} />}
     </div>
   );

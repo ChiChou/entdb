@@ -8,7 +8,6 @@ import {
 } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-import { Breadcrumbs } from "@/components/breadcrumb-list";
 import { CopyButton } from "@/components/copy-button";
 
 import { addBasePath } from "@/lib/env";
@@ -59,14 +58,17 @@ export default function BinaryDetail() {
   }, [os, path]);
 
   return (
-    <div className="p-8">
-      <Breadcrumbs os={os}>
-        <code className="text-red-800 break-all">{path}</code>
-      </Breadcrumbs>
-
+    <div>
       <main className="space-y-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-semibold">XML</h2>
+          <div>
+            <h2 className="text-xl font-semibold">Entitlements of</h2>
+            <p>
+              <code className="text-red-800 break-all font-thin text-sm">
+                {path}
+              </code>
+            </p>
+          </div>
           <CopyButton text={xml} />
         </div>
 
@@ -98,7 +100,7 @@ export default function BinaryDetail() {
                       properties: {
                         className: ["text-blue-200", "hover:underline"],
                         href: addBasePath(
-                          `/find?key=${encodeURIComponent(
+                          `/os/find?key=${encodeURIComponent(
                             node.value as string,
                           )}&os=${encodeURIComponent(os!)}`,
                         ),

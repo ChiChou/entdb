@@ -17,7 +17,7 @@ function Tree({ item, os }: { item: TreeWithFullPath; os: string }) {
           return (
             <li key={value} className="font-mono break-all text-sm m-2">
               <Link
-                href={`/bin?path=${encodeURIComponent(value)}&os=${os}`}
+                href={`/os/bin?path=${encodeURIComponent(value)}&os=${os}`}
                 className="hover:underline"
               >
                 /{key}
@@ -55,5 +55,9 @@ export default function FileSystem({
   os: string;
 }) {
   const tree = filesToTree(list);
-  return <Tree item={tree} os={os}></Tree>;
+  return (
+    <div className="mt-8">
+      <Tree item={tree} os={os}></Tree>
+    </div>
+  );
 }

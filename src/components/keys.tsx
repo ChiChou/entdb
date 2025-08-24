@@ -38,7 +38,7 @@ export default function Keys() {
   }, [value, keys]);
 
   return (
-    <div>
+    <div className="text-left">
       <div className="relative w-full max-w-md mb-4">
         <Input
           type="text"
