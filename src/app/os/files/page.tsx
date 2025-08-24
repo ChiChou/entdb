@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { addBasePath } from "@/lib/env";
 import { fetchLines } from "@/lib/client";
 
-import FileSystem from "./filesystem";
+import FileSystem from "@/components/filesystem";
 
 export default function Keys() {
   const params = useSearchParams();
