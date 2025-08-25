@@ -34,6 +34,7 @@ export default function BinaryDetail() {
     redirect("/404");
   }
 
+  const [loading, setLoading] = useState(false);
   const [xml, setXML] = useState<string | "">("");
   const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
 
@@ -54,7 +55,8 @@ export default function BinaryDetail() {
       setXMLKeys(new Set(Object.keys(json)));
     }
 
-    load();
+    setLoading(true);
+    load().finally(() => setLoading(false));
   }, [os, path]);
 
   return (
@@ -69,66 +71,69 @@ export default function BinaryDetail() {
               </code>
             </p>
           </div>
-          <CopyButton text={xml} />
+          {!loading && xml && <CopyButton text={xml} />}
         </div>
 
-        <SyntaxHighlighter
-          language="xml"
-          showLineNumbers={true}
-          style={tomorrow}
-          customStyle={{
-            margin: 0,
-            borderRadius: "0.5rem",
-            fontSize: "0.875rem",
-          }}
-          renderer={({ rows, stylesheet, useInlineStyles }) => {
-            function addLink(node: rendererNode) {
-              if (node.type === "text" && xmlKeys.has(node.value as string)) {
-                return {
-                  type: "element",
-                  tagName: "span",
-                  children: [
-                    {
-                      type: "element",
-                      tagName: "a",
-                      children: [
-                        {
-                          type: "text",
-                          value: node.value as string,
-                        } as rendererNode,
-                      ],
-                      properties: {
-                        className: ["text-blue-200", "hover:underline"],
-                        href: addBasePath(
-                          `/os/find?key=${encodeURIComponent(
-                            node.value as string,
-                          )}&os=${encodeURIComponent(os!)}`,
-                        ),
-                      },
-                    } as rendererNode,
-                  ],
-                  properties: { className: ["linked-key"] },
-                } as rendererNode;
+        {loading && <p>Loading...</p>}
+        {!loading && xml && (
+          <SyntaxHighlighter
+            language="xml"
+            showLineNumbers={true}
+            style={tomorrow}
+            customStyle={{
+              margin: 0,
+              borderRadius: "0.5rem",
+              fontSize: "0.875rem",
+            }}
+            renderer={({ rows, stylesheet, useInlineStyles }) => {
+              function addLink(node: rendererNode) {
+                if (node.type === "text" && xmlKeys.has(node.value as string)) {
+                  return {
+                    type: "element",
+                    tagName: "span",
+                    children: [
+                      {
+                        type: "element",
+                        tagName: "a",
+                        children: [
+                          {
+                            type: "text",
+                            value: node.value as string,
+                          } as rendererNode,
+                        ],
+                        properties: {
+                          className: ["text-blue-200", "hover:underline"],
+                          href: addBasePath(
+                            `/os/find?key=${encodeURIComponent(
+                              node.value as string,
+                            )}&os=${encodeURIComponent(os!)}`,
+                          ),
+                        },
+                      } as rendererNode,
+                    ],
+                    properties: { className: ["linked-key"] },
+                  } as rendererNode;
+                }
+
+                if (node.children) {
+                  node.children = node.children.map(addLink);
+                }
+                return node;
               }
 
-              if (node.children) {
-                node.children = node.children.map(addLink);
-              }
-              return node;
-            }
-
-            return rows.map((row, i) => {
-              return createElement({
-                node: addLink(row),
-                stylesheet,
-                useInlineStyles,
-                key: `code-segment-${i}`,
+              return rows.map((row, i) => {
+                return createElement({
+                  node: addLink(row),
+                  stylesheet,
+                  useInlineStyles,
+                  key: `code-segment-${i}`,
+                });
               });
-            });
-          }}
-        >
-          {xml}
-        </SyntaxHighlighter>
+            }}
+          >
+            {xml}
+          </SyntaxHighlighter>
+        )}
       </main>
     </div>
   );
