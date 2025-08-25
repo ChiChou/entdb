@@ -47,7 +47,7 @@ export default function FindByKey() {
           <code className="text-sm break-all text-red-700">{key}</code>
         </p>
       </header>
-      <FileSystem os={os} list={paths} />;
+      <FileSystem os={os} list={paths} />
     </div>
   );
 }
