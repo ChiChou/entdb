@@ -18,3 +18,13 @@ wheels/
 
 # Virtual environments
 .venv
+
+# ignore files from web branch
+public/data
+node_modules/
+out/
+data/
+next-env.d.ts
+.next
+
+.DS_Store
