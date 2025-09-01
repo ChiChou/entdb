@@ -56,5 +56,5 @@ if __name__ == "__main__":
     resp1 = urllib.request.urlopen(url1).read()
     # does not work, blocked by CloudFlare
     result1: dict[str, dict] = json.loads(resp1)
-    val = next(result1.values())
+    val = next(iter(result1.values()))
     print(val)
