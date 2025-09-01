@@ -19,6 +19,7 @@ def fetch_with_cache(url: str, cache: str) -> bytes:
 
     return buf
 
+
 def main():
     devices = json.loads(fetch_with_cache("https://api.ipsw.me/v4/devices", "devices"))
     models: list[str] = [dev["identifier"] for dev in devices]
@@ -43,10 +44,10 @@ def main():
     groups = defaultdict(list)
 
     for version, url in unified.items():
-        segments = version.split('.')
+        segments = version.split(".")
         numbers = list(map(int, segments))
         major, minor, *_ = segments
-        key = '%s.%s' % (major, minor)
+        key = "%s.%s" % (major, minor)
         groups[key].append((numbers, url))
 
     latest_minor_versions = []
@@ -62,7 +63,7 @@ def main():
         #         continue
         #     visited.add(major)
 
-        print('.'.join(map(str, numbers)), url)
+        print(".".join(map(str, numbers)), url)
 
 
 if __name__ == "__main__":

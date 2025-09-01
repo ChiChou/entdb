@@ -52,7 +52,7 @@ if __name__ == "__main__":
     import sys
 
     url1 = format_url_get_page("iPhone5,4", "7.0.5")
-    sys.stderr.write(url1 + '\n')
+    sys.stderr.write(url1 + "\n")
     resp1 = urllib.request.urlopen(url1).read()
     # does not work, blocked by CloudFlare
     result1: dict[str, dict] = json.loads(resp1)
