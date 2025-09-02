@@ -39,12 +39,10 @@ def main():
     for major_and_minor, entries in aggregated.items():
         entries.sort(key=lambda e: e["version"], reverse=True)
         latest, *_ = entries
-        print(f"#{latest['version']}")
 
-        parent = os.path.expanduser(
-            f"~/Documents/mac/{latest['name']} {latest['version']}"
-        )
-        os.makedirs(parent, exist_ok=True)
+        parent = f"{latest['name']}-{latest['version']}-{latest['build']}"
+        print(parent)
+        # os.makedirs(parent, exist_ok=True)
 
         # dumb heuristic but works
         biggest = max(latest["packages"], key=lambda p: p["size"])
