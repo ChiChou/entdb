@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "pyhpke>=0.6.2",
-    "requests>=2.32.5",
 ]
 
 [tool.ruff]
