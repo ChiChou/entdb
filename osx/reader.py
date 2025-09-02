@@ -1,8 +1,9 @@
 import sys
 import stat
 
+
 def cpio_reader(stream):
-    CPIO_MAGIC = b'070707'
+    CPIO_MAGIC = b"070707"
     HEADER_SIZE = 76
 
     while True:
@@ -22,8 +23,8 @@ def cpio_reader(stream):
         if len(filename_bytes) < name_size:
             raise EOFError("Unexpected end of stream while reading file name")
 
-        filename = filename_bytes.decode('ascii').rstrip('\0')
-        if filename == 'TRAILER!!!':
+        filename = filename_bytes.decode("ascii").rstrip("\0")
+        if filename == "TRAILER!!!":
             return
 
         content = stream.read(file_size)
@@ -33,7 +34,7 @@ def cpio_reader(stream):
         yield file_mode, filename, content
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     for mode, filename, content in cpio_reader(sys.stdin.buffer):
         if stat.S_ISDIR(mode):
             continue
