@@ -2,7 +2,7 @@ import sys
 import stat
 
 
-def cpio_reader(stream):
+def read(stream):
     CPIO_MAGIC = b"070707"
     HEADER_SIZE = 76
 
@@ -35,7 +35,7 @@ def cpio_reader(stream):
 
 
 if __name__ == "__main__":
-    for mode, filename, content in cpio_reader(sys.stdin.buffer):
+    for mode, filename, content in read(sys.stdin.buffer):
         if stat.S_ISDIR(mode):
             continue
 
