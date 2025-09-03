@@ -5,7 +5,7 @@ import hdiutil
 from pkg import expand
 
 
-class Extractor:
+class Unpacker:
     output: Path
 
     exist_ok: bool  # allow intermediate files (.dmg, .pkg) to exist, for testing
@@ -107,8 +107,8 @@ class Extractor:
 #         pkg = Path(f)
 
 #         _, version, build = pkg.parent.name.rsplit("-", 2)
-#         extractor = Extractor("output-%s" % build, exist_ok=True)
-#         results = extractor.unpack(pkg)
+#         unpacker = Unpacker("output-%s" % build, exist_ok=True)
+#         results = unpacker.unpack(pkg)
 #         print(version)
 #         for item in results:
 #             print(str(item))
