@@ -23,7 +23,7 @@ def read(stream):
         if len(filename_bytes) < name_size:
             raise EOFError("Unexpected end of stream while reading file name")
 
-        filename = filename_bytes.decode("ascii").rstrip("\0")
+        filename = filename_bytes.decode().rstrip("\0")
         if filename == "TRAILER!!!":
             return
 

@@ -94,20 +94,21 @@ class Extractor:
             return self.handle_dmg(path)
         elif name == "InstallESDDmg.pkg":
             return self.handle_install_esd_pkg(path)
-        raise NotImplementedError('%s unpacker not implemented' % name)
+        raise NotImplementedError("%s unpacker not implemented" % name)
 
 
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 2:
-        sys.exit(1)
+# if __name__ == "__main__":
+#     import sys
 
-    for f in sys.argv[2:]:
-        pkg = Path(f)
+#     if len(sys.argv) < 2:
+#         sys.exit(1)
 
-        _, version, build = pkg.parent.name.rsplit("-", 2)
-        extractor = Extractor("output-%s" % build, exist_ok=True)
-        results = extractor.unpack(pkg)
-        print(version)
-        for item in results:
-            print(str(item))
+#     for f in sys.argv[1:]:
+#         pkg = Path(f)
+
+#         _, version, build = pkg.parent.name.rsplit("-", 2)
+#         extractor = Extractor("output-%s" % build, exist_ok=True)
+#         results = extractor.unpack(pkg)
+#         print(version)
+#         for item in results:
+#             print(str(item))
