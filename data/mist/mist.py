@@ -41,7 +41,6 @@ def main():
         latest, *_ = entries
 
         parent = f"{latest['name']}-{latest['version']}-{latest['build']}"
-        print(parent)
         # os.makedirs(parent, exist_ok=True)
 
         # dumb heuristic but works
