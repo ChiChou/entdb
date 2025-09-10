@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# MIT License
+#
+# Copyright (c) 2024 Dhinak G
+# https://github.com/dhinakg/aeota
+
 # Modified from Nicolas's initial script
 # Thx to Siguza and Snoolie for AEA auth block parsing information
 
