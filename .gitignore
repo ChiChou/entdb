@@ -1,5 +1,7 @@
 cache/
-
+# tool output
+output/
+output-*/
 node_modules/
 
 # Byte-compiled / optimized / DLL files
