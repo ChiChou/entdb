@@ -53,8 +53,15 @@ if __name__ == "__main__":
 
     url1 = format_url_get_page("iPhone5,4", "7.0.5")
     sys.stderr.write(url1 + "\n")
-    resp1 = urllib.request.urlopen(url1).read()
-    # does not work, blocked by CloudFlare
+    req1 = urllib.request.Request(
+        url1,
+        headers={
+            'User-Agent': 'HTTPie/3.2.4',
+            'Accept': 'application/json'
+        }
+    )
+
+    resp1 = urllib.request.urlopen(req1).read()
     result1: dict[str, dict] = json.loads(resp1)
     val = next(iter(result1.values()))
     print(val)
