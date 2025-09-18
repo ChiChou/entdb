@@ -83,17 +83,13 @@ class Extractor:
 def main():
     parser = argparse.ArgumentParser(description="parse from ipsw")
     parser.add_argument("ipsw", type=str, nargs="+", help="Path to the .ipsw file(s)")
-    parser.add_argument(
-        "--tmp",
-        type=str,
-        help="Path to the temporary directory (recommend to use ramdisk)",
-        nargs="?",
-    )
     args = parser.parse_args()
 
     for ipsw in args.ipsw:
         print(ipsw)
-        Extractor(ipsw).extract()
+        e = Extractor(ipsw)
+        print(e.version, e.build, e.devices)
+        e.extract()
 
 
 if __name__ == "__main__":

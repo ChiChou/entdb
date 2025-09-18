@@ -61,18 +61,26 @@ class Reader:
         self.conn = sqlite3.connect(self.path)
 
     def metadata(self, build: str):
-        cursor = self.conn.execute('SELECT name, version FROM os WHERE build=?', (build,))
+        cursor = self.conn.execute(
+            "SELECT name, version FROM os WHERE build=?", (build,)
+        )
         name, version = cursor.fetchone()
         return dict(name=name, build=build, version=version)
 
     def paths(self, build: str) -> list[str]:
-        cursor = self.conn.execute("""
+        cursor = self.conn.execute(
+            """
             SELECT path FROM bin JOIN os ON bin.osid=os.id
-            WHERE os.build=?""", (build,))
+            WHERE os.build=?""",
+            (build,),
+        )
         return [row[0] for row in cursor.fetchall()]
 
     def keys(self, build: str):
-        cursor = self.conn.execute("""
+        cursor = self.conn.execute(
+            """
             SELECT distinct key FROM pair JOIN bin ON pair.binid=bin.id
-            JOIN os ON bin.osid=os.id WHERE os.build=?""", (build,))
+            JOIN os ON bin.osid=os.id WHERE os.build=?""",
+            (build,),
+        )
         return [row[0] for row in cursor.fetchall()]

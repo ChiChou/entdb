@@ -1,13 +1,13 @@
 import sys
 
 # this script takes the xml generated from keys.py as input
-with open(sys.argv[1], 'r') as fp:
+with open(sys.argv[1], "r") as fp:
     content = fp.read()
 
-sys.stderr.write('submit the list to https://theapplewiki.com/wiki/Special:Export\n')
+sys.stderr.write("submit the list to https://theapplewiki.com/wiki/Special:Export\n")
 
-begin = '[[Keys:'
-end = ']]'
+begin = "[[Keys:"
+end = "]]"
 
 cursor = 0
 while True:
@@ -19,9 +19,9 @@ while True:
     if end_idx == -1:
         break
 
-    between = content[begin_idx + len(begin):end_idx]
+    between = content[begin_idx + len(begin) : end_idx]
     # if 'iPhone' in between:
-    print('Keys:' + between[0:between.find('|')])
+    print("Keys:" + between[0 : between.find("|")])
 
     # print(content[begin_idx:end_idx + len(end)])
     cursor = end_idx + len(end)
