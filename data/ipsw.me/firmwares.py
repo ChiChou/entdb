@@ -1,5 +1,6 @@
 from urllib.request import urlopen
-from pathlib import Path
+from urllib.parse import urlparse
+from pathlib import Path, PosixPath
 from collections import defaultdict
 import json
 
@@ -9,8 +10,9 @@ def fetch_with_cache(url: str, cache: str) -> bytes:
     parent.mkdir(exist_ok=True)
     local = parent / cache
     if local.exists() and local.is_file():
-        with local.open("rb") as fp:
-            return fp.read()
+        if (local.stat().st_mtime + 86400) > (Path().stat().st_mtime):
+            with local.open("rb") as fp:
+                return fp.read()
 
     buf = urlopen(url).read()
 
@@ -20,7 +22,7 @@ def fetch_with_cache(url: str, cache: str) -> bytes:
     return buf
 
 
-def main():
+def main(output: str):
     devices = json.loads(fetch_with_cache("https://api.ipsw.me/v4/devices", "devices"))
     models: list[str] = [dev["identifier"] for dev in devices]
     phones = [m for m in models if m.startswith("iPhone")]
@@ -55,6 +57,8 @@ def main():
         group.sort(key=lambda x: x[0])
         latest_minor_versions.append(group[-1])
 
+    outdir = Path(output)
+
     # visited: set[int] = set()
     for numbers, url in latest_minor_versions:
         major, *_ = numbers
@@ -63,8 +67,23 @@ def main():
         #         continue
         #     visited.add(major)
 
-        print(".".join(map(str, numbers)), url)
+        u = urlparse(url)
+        ipsw = outdir / PosixPath(u.path).name
+
+        if not ipsw.exists():
+            print("curl -L -O", url, end=" ")
+
+            if output != ".":
+                print(str(ipsw))
+            else:
+                print()
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("output", nargs="?", default=".", help="Output directory")
+    args = parser.parse_args()
+
+    main(args.output)
