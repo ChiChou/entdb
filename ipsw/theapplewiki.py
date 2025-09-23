@@ -33,7 +33,6 @@ def format_url_fetch_key(page: str):
     url_template = f"""
         /-5B-5B-2DHas subobject::{page}-5D-5D
         /-3FHas filename=filename
-        /-3FHas firmware device=device
         /-3FHas key=key
         /-3FHas key IV=iv
         /mainlabel=filename
@@ -50,8 +49,7 @@ def fetch(url: str) -> dict[str, dict]:
     )
 
     resp = urllib.request.urlopen(req).read()
-    result: dict[str, dict] = json.loads(resp)
-    return result
+    return json.loads(resp)
 
 
 def get_page_name(model: str, build: str) -> str:
@@ -64,7 +62,8 @@ def get_page_name(model: str, build: str) -> str:
 
 def fetch_page(key: str) -> dict[str, dict]:
     url = format_url_fetch_key(key)
-    return fetch(url)
+    raw = fetch(url)
+    return {key.rsplit("#", 1).pop(): val for key, val in raw.items()}
 
 
 if __name__ == "__main__":

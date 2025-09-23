@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
+#
+# extract root fs dmg from ipsw
+
 import argparse
 import plistlib
 from zipfile import ZipFile
+from pathlib import Path
 
 
 class Extractor:
@@ -56,40 +61,61 @@ class Extractor:
                 except KeyError:
                     raise RuntimeError("Invalid ipsw")
 
-    def extract(self):
+    def extract(self, output: str):
+        outdir = Path(output)
+        outdir.mkdir(parents=True, exist_ok=True)
+
         for name, path in self.images.items():
             if name.startswith("AP,"):  # ExclaveOS, skip
                 continue
-            if name.startswith("Cryptex1,"):
-                cryptex = name[len("Cryptex1,") :]
-                prefix = "/System/Volumes/Preboot/Cryptexes/" + cryptex
+
+            dest = outdir / (self.version + "-" + name + ".dmg")
+            if dest.exists():
                 continue
 
-            print(name, path)
+            if name in ("OS", "User") or name.startswith("Cryptex1,"):
+                import tempfile
+                import subprocess
+                import shutil
+                from osx.hdiutil import encrypted
+                from theapplewiki import get_page_name, fetch_page
+
+                with tempfile.TemporaryDirectory() as cwd:
+                    subprocess.call(["unzip", self.ipsw, path], cwd=cwd)
+                    dmg = Path(cwd) / path
+                    if encrypted(str(dmg)):
+                        device, *_ = self.devices
+                        page_name = get_page_name(device, self.build)
+                        content = fetch_page(page_name)
+                        (key,) = content["rootfs"]["key"]
+                        subprocess.call(
+                            ["vfdecrypt", "-k", key, "-i", str(dmg), "-o", dest]
+                        )
+
+                    else:
+                        shutil.copyfile(dmg, dest)
 
 
-# def print_images(images: dict[str, str]):
-#     user = images.get("User")
-#     # iPhone OS 1.x and 2.x
-#     if user:
-#         print("unzip -l ipsw %s" % user)
-#         return
-
-#     # iPhone OS 3.x and later
-#     for name, path in images.items():
-#         print("(%s) unzip -l ipsw %s" % (name, path))
+def task(args):
+    ipsw, output = args
+    e = Extractor(ipsw)
+    e.extract(output)
 
 
 def main():
+    import multiprocessing
+
     parser = argparse.ArgumentParser(description="parse from ipsw")
     parser.add_argument("ipsw", type=str, nargs="+", help="Path to the .ipsw file(s)")
+    parser.add_argument(
+        "-j", "--jobs", type=int, default=1, help="Number of parallel jobs"
+    )
+    parser.add_argument(
+        "-o", "--output", type=str, default=".", help="Output directory"
+    )
     args = parser.parse_args()
-
-    for ipsw in args.ipsw:
-        print(ipsw)
-        e = Extractor(ipsw)
-        print(e.version, e.build, e.devices)
-        e.extract()
+    pool = multiprocessing.Pool(args.jobs)
+    pool.map(task, [(ipsw, args.output) for ipsw in args.ipsw])
 
 
 if __name__ == "__main__":

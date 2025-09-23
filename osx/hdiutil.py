@@ -28,6 +28,12 @@ def unmount(mount_point: str) -> None:
     hdiutil("detach", mount_point)
 
 
+def encrypted(dmg: str) -> bool:
+    buf = hdiutil("isencrypted", "-plist", dmg)
+    plist = plistlib.loads(buf)
+    return plist["encrypted"]
+
+
 # def mount_point(dmg: str) -> str:
 #     import plistlib
 #     info = plistlib.loads(hdiutil("info", "-plist"))
