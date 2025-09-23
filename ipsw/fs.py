@@ -76,24 +76,26 @@ class Extractor:
             if name in ("OS", "User") or name.startswith("Cryptex1,"):
                 import subprocess
                 import shutil
+                import tempfile
                 from osx.hdiutil import encrypted
                 from theapplewiki import get_page_name, fetch_page
 
-                subprocess.call(["unzip", self.ipsw, path], cwd=outdir)
-                dmg = outdir / path
+                with tempfile.TemporaryDirectory(dir=outdir) as cwd:
+                    subprocess.call(["unzip", self.ipsw, path], cwd=cwd)
+                    dmg = Path(cwd) / path
 
-                if encrypted(str(dmg)):
-                    device, *_ = self.devices
-                    page_name = get_page_name(device, self.build)
-                    content = fetch_page(page_name)
-                    (key,) = content["rootfs"]["key"]
-                    subprocess.call(
-                        ["vfdecrypt", "-k", key, "-i", str(dmg), "-o", dest]
-                    )
-                    dmg.unlink()
+                    if encrypted(str(dmg)):
+                        device, *_ = self.devices
+                        page_name = get_page_name(device, self.build)
+                        content = fetch_page(page_name)
+                        (key,) = content["rootfs"]["key"]
+                        subprocess.call(
+                            ["vfdecrypt", "-k", key, "-i", str(dmg), "-o", dest]
+                        )
+                        dmg.unlink()
 
-                else:
-                    shutil.move(dmg, dest)
+                    else:
+                        shutil.move(dmg, dest)
 
 
 def task(args):
