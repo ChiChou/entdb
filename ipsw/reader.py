@@ -8,7 +8,7 @@ from zipfile import ZipFile
 from pathlib import Path
 
 
-class Extractor:
+class Reader:
     version: str
     build: str
     devices: list[str]
@@ -60,56 +60,3 @@ class Extractor:
                     self.parse_restore(load("Restore.plist"))
                 except KeyError:
                     raise RuntimeError("Invalid ipsw")
-
-    def extract(self, output: str):
-        outdir = Path(output)
-        outdir.mkdir(parents=True, exist_ok=True)
-
-        for name, path in self.images.items():
-            if name.startswith("AP,"):  # ExclaveOS, skip
-                continue
-
-            dest = outdir / (self.version + "-" + name + ".dmg")
-            if dest.exists():
-                continue
-
-            if name in ("OS", "User") or name.startswith("Cryptex1,"):
-                import subprocess
-                import shutil
-                import tempfile
-                from osx.hdiutil import encrypted
-                from theapplewiki import get_page_name, fetch_page
-
-                with tempfile.TemporaryDirectory(dir=outdir) as cwd:
-                    subprocess.call(["unzip", self.ipsw, path], cwd=cwd)
-                    dmg = Path(cwd) / path
-
-                    if encrypted(str(dmg)):
-                        device, *_ = self.devices
-                        page_name = get_page_name(device, self.build)
-                        content = fetch_page(page_name)
-                        (key,) = content["rootfs"]["key"]
-                        subprocess.call(
-                            ["vfdecrypt", "-k", key, "-i", str(dmg), "-o", dest]
-                        )
-                        dmg.unlink()
-
-                    else:
-                        shutil.move(dmg, dest)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="parse from ipsw")
-    parser.add_argument("ipsw", type=str, nargs="+", help="Path to the .ipsw file(s)")
-    parser.add_argument(
-        "-o", "--output", type=str, default=".", help="Output directory"
-    )
-    args = parser.parse_args()
-
-    for ipsw in args.ipsw:
-        e = Extractor(ipsw)
-        e.extract(args.output)
-
-
-if __name__ == "__main__":
-    main()
