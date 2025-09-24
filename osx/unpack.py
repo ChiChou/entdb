@@ -95,20 +95,3 @@ class Unpacker:
         elif name == "InstallESDDmg.pkg":
             return self.handle_install_esd_pkg(path)
         raise NotImplementedError("%s unpacker not implemented" % name)
-
-
-# if __name__ == "__main__":
-#     import sys
-
-#     if len(sys.argv) < 2:
-#         sys.exit(1)
-
-#     for f in sys.argv[1:]:
-#         pkg = Path(f)
-
-#         _, version, build = pkg.parent.name.rsplit("-", 2)
-#         unpacker = Unpacker("output-%s" % build, exist_ok=True)
-#         results = unpacker.unpack(pkg)
-#         print(version)
-#         for item in results:
-#             print(str(item))
