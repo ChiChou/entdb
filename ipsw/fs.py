@@ -98,26 +98,17 @@ class Extractor:
                         shutil.move(dmg, dest)
 
 
-def task(args):
-    ipsw, output = args
-    e = Extractor(ipsw)
-    e.extract(output)
-
-
 def main():
-    import multiprocessing
-
     parser = argparse.ArgumentParser(description="parse from ipsw")
     parser.add_argument("ipsw", type=str, nargs="+", help="Path to the .ipsw file(s)")
-    parser.add_argument(
-        "-j", "--jobs", type=int, default=1, help="Number of parallel jobs"
-    )
     parser.add_argument(
         "-o", "--output", type=str, default=".", help="Output directory"
     )
     args = parser.parse_args()
-    pool = multiprocessing.Pool(args.jobs)
-    pool.map(task, [(ipsw, args.output) for ipsw in args.ipsw])
+
+    for ipsw in args.ipsw:
+        e = Extractor(ipsw)
+        e.extract(args.output)
 
 
 if __name__ == "__main__":
