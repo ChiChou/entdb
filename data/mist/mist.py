@@ -16,14 +16,14 @@ def fetch():
     ) as tmp_file:
         tmp = tmp_file.name
 
-    subprocess.check_call(["mist", "list", "installer", "-e", tmp])
+    subprocess.check_call(["mist", "list", "installer", "-e", tmp], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     with open(tmp) as fp:
         data = json.load(fp)
     os.unlink(tmp)
     return data
 
 
-def main():
+def packages():
     aggregated = defaultdict(list)
 
     for entry in fetch():
@@ -40,13 +40,15 @@ def main():
         entries.sort(key=lambda e: e["version"], reverse=True)
         latest, *_ = entries
 
-        parent = f"{latest['name']}-{latest['version']}-{latest['build']}"
-        # os.makedirs(parent, exist_ok=True)
-
         # dumb heuristic but works
         biggest = max(latest["packages"], key=lambda p: p["size"])
-        print(f"cd '{parent}'")
-        print(f"curl -L -O {biggest['url']}")
+        yield dict(name=latest["name"], version=latest["version"], build=latest["build"], url=biggest["url"])
+
+
+def main():
+    for package in packages():
+        print(f"cd '{package['name']}-{package['version']}-{package['build']}'")
+        print(f"curl -L -O {package['url']}")
 
 
 if __name__ == "__main__":
