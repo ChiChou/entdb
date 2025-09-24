@@ -15,6 +15,7 @@ import base64
 import json
 import sys
 import urllib.request
+from io import BufferedReader
 from pathlib import Path
 from pprint import pprint
 
@@ -27,7 +28,7 @@ suite = CipherSuite.new(
 )
 
 
-def get_key(f, verbose: bool = False):
+def get_key(f: BufferedReader, verbose=False):
     fields = {}
     header = f.read(12)
     assert len(header) == 12
@@ -81,7 +82,7 @@ def get_key(f, verbose: bool = False):
         print(base64.b64encode(pt).decode())
 
 
-def main(path: str, verbose: bool = False):
+def main(path: str, verbose: bool):
     aea_path = Path(path)
     with aea_path.open("rb") as f:
         get_key(f, verbose)
