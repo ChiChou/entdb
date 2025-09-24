@@ -24,6 +24,15 @@ class Writer:
 
     def _insert_os(self, name: str, version: str, build: str) -> int:
         cursor = self.conn.execute(
+            "SELECT id FROM os WHERE name=? AND version=? AND build=?",
+            (name, version, build),
+        )
+        row = cursor.fetchone()
+        if row:
+            osid, *_ = row
+            return osid
+
+        cursor = self.conn.execute(
             "INSERT INTO os (name, version, build) VALUES (?, ?, ?)",
             (name, version, build),
         )
