@@ -83,7 +83,6 @@ def get_key(f, verbose: bool = False):
 
 def main(path: str, verbose: bool = False):
     aea_path = Path(path)
-    assert aea_path.exists()
     with aea_path.open("rb") as f:
         get_key(f, verbose)
 
