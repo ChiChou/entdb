@@ -16,7 +16,11 @@ def fetch():
     ) as tmp_file:
         tmp = tmp_file.name
 
-    subprocess.check_call(["mist", "list", "installer", "-e", tmp], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.check_call(
+        ["mist", "list", "installer", "-e", tmp],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     with open(tmp) as fp:
         data = json.load(fp)
     os.unlink(tmp)
@@ -42,7 +46,12 @@ def packages():
 
         # dumb heuristic but works
         biggest = max(latest["packages"], key=lambda p: p["size"])
-        yield dict(name=latest["name"], version=latest["version"], build=latest["build"], url=biggest["url"])
+        yield dict(
+            name=latest["name"],
+            version=latest["version"],
+            build=latest["build"],
+            url=biggest["url"],
+        )
 
 
 def main():
