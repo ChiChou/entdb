@@ -16,7 +16,7 @@ export default function Keys() {
 
   useEffect(() => {
     setLoading(true);
-    fetchLines(addBasePath(`/data/${os}/paths`))
+    fetchLines(addBasePath(`/data/${os}/paths.txt`))
       .then(setFiles)
       .finally(() => setLoading(false));
   }, [os]);

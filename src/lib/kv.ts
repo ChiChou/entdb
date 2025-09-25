@@ -38,8 +38,8 @@ class KV {
 }
 
 export async function create(baseURL: string) {
-  const recordsURL = baseURL + "-index.json";
-  const blobsURL = baseURL + ".bin";
+  const recordsURL = baseURL + ".index.json";
+  const blobsURL = baseURL + ".txt";
   const records = await fetch(recordsURL).then((r) => r.json());
   return new KV(records, blobsURL);
 }
