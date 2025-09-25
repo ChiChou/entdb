@@ -67,7 +67,7 @@ class DiskImage:
             unmount(self._mp)
 
 
-def ramdisk(size: int):
+def ramdisk(size: int) -> str:
     attach_args = ["hdiutil", "attach", "-nomount", ("ram://%d" % size)]
     dev = subprocess.check_output(attach_args).decode().strip()
 

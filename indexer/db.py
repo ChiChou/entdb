@@ -50,7 +50,8 @@ class Writer:
         return osid
 
     def insert(self, path: str, xml: bytes):
-        assert len(xml), "XML data cannot be empty"
+        if not len(xml):
+            return
 
         d = plistlib.loads(xml)
         j = json.dumps(d)

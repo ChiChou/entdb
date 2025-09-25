@@ -4,8 +4,7 @@ from typing import Callable
 
 
 class FileSystemVisitor:
-    def __init__(self, root: Path, predicate: Callable[[Path], bool] = lambda x: True):
-        self.root = root.resolve()
+    def __init__(self, predicate: Callable[[Path], bool] = lambda x: True):
         self.predicate = predicate
 
     def visit(self, path: Path):
@@ -14,7 +13,11 @@ class FileSystemVisitor:
 
         if path.is_dir():
             for child in path.iterdir():
-                yield from self.visit(child)
+                try:
+                    yield from self.visit(child)
+                except PermissionError:
+                    continue
+
         elif path.is_file():
             if self.predicate(path):
                 yield path
@@ -28,7 +31,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
     root = Path(sys.argv[1]).resolve()
-    visitor = FileSystemVisitor(root, predicate=is_macho)
+    visitor = FileSystemVisitor(predicate=is_macho)
     for path in visitor.visit(root):
         relative = path.resolve().relative_to(root)
         absolute = "/%s" % relative

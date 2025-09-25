@@ -47,7 +47,7 @@ def main():
                 "releasedate": fw["releasedate"],
                 "md5": fw["md5sum"],
                 "sha1": fw["sha1sum"],
-                "sha256": fw["sha256sum"]
+                "sha256": fw["sha256sum"],
             }
 
     # group by major.minor

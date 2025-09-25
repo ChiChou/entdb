@@ -1,19 +1,16 @@
 import shutil
 from pathlib import Path
 
-import hdiutil
-from pkg import expand
+from osx.hdiutil import DiskImage
+from osx.pkg import expand
 
 
 class Unpacker:
     output: Path
-
-    exist_ok: bool  # allow intermediate files (.dmg, .pkg) to exist, for testing
     override: bool  # override output directory
 
-    def __init__(self, output: str, exist_ok=False, override=False):
+    def __init__(self, output: str, override=False):
         self.output = o = Path(output)
-        self.exist_ok = exist_ok
 
         if o.exists():
             if not o.is_dir():
@@ -31,9 +28,7 @@ class Unpacker:
 
     def expand(self, pkg: Path) -> Path:
         cwd = self.output / pkg.name.replace(".", "_")
-        if cwd.exists() and self.exist_ok:
-            pass  # do nothing
-        else:
+        if not cwd.exists():
             expand(pkg, cwd)
 
         return cwd
@@ -57,7 +52,7 @@ class Unpacker:
         return extracted / "Payload"
 
     def handle_installesd_dmg(self, dmg: Path):
-        with hdiutil.DiskImage(str(dmg)) as mount_root:
+        with DiskImage(str(dmg)) as mount_root:
             root = Path(mount_root)
             packages = root / "Packages"
             candidates = [
@@ -81,7 +76,7 @@ class Unpacker:
     def handle_dmg(self, dmg: Path):
         pkg_name = dmg.with_suffix(".pkg").name
 
-        with hdiutil.DiskImage(str(dmg)) as mount_point:
+        with DiskImage(str(dmg)) as mount_point:
             root = Path(mount_point)
             main_pkg = root / pkg_name
             cwd = self.expand(main_pkg)
