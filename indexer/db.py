@@ -78,12 +78,21 @@ class Reader:
         self.path = path
         self.conn = sqlite3.connect(self.path)
 
+    def all_os(self):
+        cursor = self.conn.execute("SELECT name, version, build, devices FROM os")
+        return [
+            dict(name=name, version=version, build=build, devices=json.loads(devices))
+            for name, version, build, devices in cursor.fetchall()
+        ]
+
     def metadata(self, build: str):
         cursor = self.conn.execute(
             "SELECT name, version, devices FROM os WHERE build=?", (build,)
         )
         name, version, devices = cursor.fetchone()
-        return dict(name=name, build=build, version=version, devices=json.loads(devices))
+        return dict(
+            name=name, build=build, version=version, devices=json.loads(devices)
+        )
 
     def paths(self, build: str) -> list[str]:
         cursor = self.conn.execute(
@@ -91,6 +100,27 @@ class Reader:
             SELECT path FROM bin JOIN os ON bin.osid=os.id
             WHERE os.build=?""",
             (build,),
+        )
+        return [row[0] for row in cursor.fetchall()]
+
+    def binaries(self, osbuild: str):
+        cursor = self.conn.execute(
+            """
+            SELECT path, xml, json FROM bin JOIN os ON bin.osid=os.id
+            WHERE os.build=?""",
+            (osbuild,),
+        )
+        return [
+            dict(path=path, xml=xml, json=json) for path, xml, json in cursor.fetchall()
+        ]
+
+    def owns_key(self, osbuild: str, key: str) -> list[str]:
+        # select all paths that has the key
+        cursor = self.conn.execute(
+            """
+            SELECT path FROM bin JOIN pair ON bin.id=pair.binid
+            JOIN os ON bin.osid=os.id WHERE os.build=? AND pair.key=?""",
+            (osbuild, key),
         )
         return [row[0] for row in cursor.fetchall()]
 
