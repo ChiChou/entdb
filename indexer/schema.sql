@@ -8,6 +8,7 @@ CREATE TABLE "os" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "name" VARCHAR(32) NOT NULL,
     "build" VARCHAR(32) NOT NULL,
+    "devices" TEXT,
     "version" VARCHAR(32) NOT NULL);
 
 CREATE TABLE "bin" (
