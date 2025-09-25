@@ -1,6 +1,5 @@
 from urllib.request import urlopen
-from urllib.parse import urlparse
-from pathlib import Path, PosixPath
+from pathlib import Path
 from collections import defaultdict
 import json
 
@@ -22,7 +21,7 @@ def fetch_with_cache(url: str, cache: str) -> bytes:
     return buf
 
 
-def main(output: str):
+def main():
     devices = json.loads(fetch_with_cache("https://api.ipsw.me/v4/devices", "devices"))
     models: list[str] = [dev["identifier"] for dev in devices]
     phones = [m for m in models if m.startswith("iPhone")]
@@ -40,50 +39,37 @@ def main(output: str):
         # this item gets updated many times until the latest model
         for fw in ipsw["firmwares"]:
             version = fw["version"]
-            unified[version] = fw["url"]
+            unified[version] = {
+                "url": fw["url"],
+                "model": model,
+                "version": fw["version"],
+                "build": fw["buildid"],
+                "releasedate": fw["releasedate"],
+                "md5": fw["md5sum"],
+                "sha1": fw["sha1sum"],
+                "sha256": fw["sha256sum"]
+            }
 
     # group by major.minor
     groups = defaultdict(list)
 
-    for version, url in unified.items():
+    for version, fw in unified.items():
         segments = version.split(".")
         numbers = list(map(int, segments))
         major, minor, *_ = segments
         key = "%s.%s" % (major, minor)
-        groups[key].append((numbers, url))
+        groups[key].append((numbers, fw))
 
     latest_minor_versions = []
     for key, group in groups.items():
         group.sort(key=lambda x: x[0])
         latest_minor_versions.append(group[-1])
 
-    outdir = Path(output)
+    latest_minor_versions.sort(key=lambda x: x[0])
+    result = [x[1] for x in latest_minor_versions]
 
-    # visited: set[int] = set()
-    for numbers, url in latest_minor_versions:
-        major, *_ = numbers
-        # if major < 11:
-        #     if major in visited:
-        #         continue
-        #     visited.add(major)
-
-        u = urlparse(url)
-        ipsw = outdir / PosixPath(u.path).name
-
-        if not ipsw.exists():
-            print("curl -L -O", url, end=" ")
-
-            if output != ".":
-                print(str(ipsw))
-            else:
-                print()
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("output", nargs="?", default=".", help="Output directory")
-    args = parser.parse_args()
-
-    main(args.output)
+    main()
