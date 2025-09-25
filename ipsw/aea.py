@@ -10,14 +10,10 @@
 
 # Requirements: pip3 install pyhpke
 
-import argparse
 import base64
 import json
-import sys
 import urllib.request
 from io import BufferedReader
-from pathlib import Path
-from pprint import pprint
 
 from pyhpke import AEADId, CipherSuite, KDFId, KEMId, KEMKey
 
@@ -28,7 +24,7 @@ suite = CipherSuite.new(
 )
 
 
-def get_key(f: BufferedReader, verbose=False):
+def get_key(f: BufferedReader) -> bytes:
     fields = {}
     header = f.read(12)
     assert len(header) == 12
@@ -52,13 +48,8 @@ def get_key(f: BufferedReader, verbose=False):
         field_blob = auth_data_blob[:field_size]
 
         key, value = field_blob[4:].split(b"\x00", 1)
-
         fields[key.decode()] = value.decode()
-
         auth_data_blob = auth_data_blob[field_size:]
-
-    if verbose:
-        pprint(fields, stream=sys.stderr)
 
     assert "com.apple.wkms.fcs-response" in fields
     assert "com.apple.wkms.fcs-key-url" in fields
@@ -74,26 +65,16 @@ def get_key(f: BufferedReader, verbose=False):
     privkey = KEMKey.from_pem(pem)
 
     recipient = suite.create_recipient_context(enc_request, privkey)
-    pt = recipient.open(wrapped_key)
-
-    if verbose:
-        print(f"Key: {base64.b64encode(pt).decode()}")
-    else:
-        print(base64.b64encode(pt).decode())
-
-
-def main(path: str, verbose: bool):
-    aea_path = Path(path)
-    with aea_path.open("rb") as f:
-        get_key(f, verbose)
+    return recipient.open(wrapped_key)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Get the key for an AEA file or URL")
-    parser.add_argument("path", help="Path or URL to the AEA file")
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Show verbose output"
-    )
-    args = parser.parse_args()
+    import sys
 
-    main(args.path, args.verbose)
+    if len(sys.argv) != 2:
+        print("Usage: python aea.py <path>")
+        sys.exit(1)
+
+    with open(sys.argv[1], "rb") as f:
+        key = get_key(f)
+        print(base64.b64encode(key).decode())

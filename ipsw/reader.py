@@ -2,10 +2,8 @@
 #
 # extract root fs dmg from ipsw
 
-import argparse
 import plistlib
 from zipfile import ZipFile
-from pathlib import Path
 
 
 class Reader:
