@@ -6,13 +6,20 @@ from pathlib import Path
 
 
 class Writer:
-    def __init__(self, path: str, name: str, build: str, version: str, devices: list[str] | None = None):
+    def __init__(
+        self,
+        path: str,
+        name: str,
+        build: str,
+        version: str,
+        devices: list[str] | None = None,
+    ):
         self.path = path
+        self.devices = devices or []
         self.conn = sqlite3.connect(self.path)
 
         self.create_tables()
         self.osid = self._insert_os(name, build, version)
-        self.devices = devices or []
 
     def create_tables(self):
         sql_file = Path(__file__).parent / "schema.sql"

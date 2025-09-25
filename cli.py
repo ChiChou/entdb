@@ -65,10 +65,11 @@ def extract(ipsw: str, output: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="parse from ipsw")
+    parser = argparse.ArgumentParser(description="create sqlite entitlements db from ipsw or extract filesystem images")
+    parser.add_argument("action", type=str, choices=["index", "extract"], help="Action to perform")
     parser.add_argument("ipsw", type=str, nargs="+", help="Path to the .ipsw file(s)")
     parser.add_argument(
-        "-o", "--output", type=str, default=".", help="Output directory"
+        "-o", "--output", type=str, default=".", help="Database output path"
     )
     args = parser.parse_args()
 
