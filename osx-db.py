@@ -69,7 +69,7 @@ def main():
             db = Writer(args.output, name, version, build, ["Mac"])
             results = u.unpack(p)
             for item in results:
-                print('processing', item)
+                print("processing", item)
                 for path, entitlements in read_pkg(item, rd):
                     db.insert(path, entitlements)
 

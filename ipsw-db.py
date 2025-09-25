@@ -39,7 +39,6 @@ def build_database(ipsw: str, output: str):
 
     with tempfile.TemporaryDirectory() as cwd:
         for name, path in reader.images.items():
-            # dest = Path("/Volumes/NetBackup/rootfs") / f"{reader.version}-{name}.dmg"
             dest = Path(cwd) / f"{reader.version}-{name}.dmg"
 
             subprocess.call(["unzip", reader.ipsw, path], cwd=cwd)
@@ -69,9 +68,7 @@ def build_database(ipsw: str, output: str):
                 page_name = get_page_name(device, reader.build)
                 content = fetch_page(page_name)
                 (key,) = content["rootfs"]["key"]
-                subprocess.call(
-                    ["vfdecrypt", "-k", key, "-i", str(dmg), "-o", dest]
-                )
+                subprocess.call(["vfdecrypt", "-k", key, "-i", str(dmg), "-o", dest])
                 dmg.unlink()
 
             else:
@@ -91,6 +88,7 @@ def build_database(ipsw: str, output: str):
                 writer.insert(absolute, xml)
 
             unmount(root)
+
 
 def main():
     parser = argparse.ArgumentParser(
