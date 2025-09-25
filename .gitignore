@@ -1,3 +1,5 @@
+*.db
+
 cache/
 # tool output
 output/
