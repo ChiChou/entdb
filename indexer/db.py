@@ -80,10 +80,10 @@ class Reader:
 
     def metadata(self, build: str):
         cursor = self.conn.execute(
-            "SELECT name, version FROM os WHERE build=?", (build,)
+            "SELECT name, version, devices FROM os WHERE build=?", (build,)
         )
-        name, version = cursor.fetchone()
-        return dict(name=name, build=build, version=version)
+        name, version, devices = cursor.fetchone()
+        return dict(name=name, build=build, version=version, devices=json.loads(devices))
 
     def paths(self, build: str) -> list[str]:
         cursor = self.conn.execute(
