@@ -26,7 +26,7 @@ class Reader:
         self.images = {}
         for identity in plist["BuildIdentities"]:
             for name, info in identity["Manifest"].items():
-                if name in ("RestoreRamDisk", "Ap,ExclaveOS"):
+                if name in ("RestoreRamDisk", "Ap,ExclaveOS", "BaseSystem"):
                     continue
 
                 path: str = info.get("Info", {}).get("Path", "")
