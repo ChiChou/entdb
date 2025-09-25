@@ -1,17 +1,11 @@
-DROP TABLE IF EXISTS "os";
-DROP TABLE IF EXISTS "bin";
-DROP TABLE IF EXISTS "bin_osid";
-DROP TABLE IF EXISTS "pair";
-DROP TABLE IF EXISTS "pair_binid";
-
-CREATE TABLE "os" (
+CREATE TABLE IF NOT EXISTS "os" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "name" VARCHAR(32) NOT NULL,
-    "build" VARCHAR(32) NOT NULL,
+    "build" VARCHAR(32) NOT NULL UNIQUE,
     "devices" TEXT,
     "version" VARCHAR(32) NOT NULL);
 
-CREATE TABLE "bin" (
+CREATE TABLE IF NOT EXISTS "bin" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "osid" INTEGER NOT NULL,
     "path" TEXT NOT NULL,
@@ -20,9 +14,9 @@ CREATE TABLE "bin" (
     UNIQUE("osid", "path") ON CONFLICT REPLACE
     FOREIGN KEY ("osid") REFERENCES "os" ("id"));
 
-CREATE INDEX "bin_osid" ON "bin" ("osid");
+CREATE INDEX IF NOT EXISTS "bin_osid" ON "bin" ("osid");
 
-CREATE TABLE "pair" (
+CREATE TABLE IF NOT EXISTS "pair" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "binid" INTEGER NOT NULL,
     "key" VARCHAR(255) NOT NULL,
@@ -30,4 +24,4 @@ CREATE TABLE "pair" (
     UNIQUE("binid", "key") ON CONFLICT REPLACE
     FOREIGN KEY ("binid") REFERENCES "bin" ("id"));
 
-CREATE INDEX "pair_binid" ON "pair" ("binid");
+CREATE INDEX IF NOT EXISTS "pair_binid" ON "pair" ("binid");
