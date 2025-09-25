@@ -10,7 +10,7 @@ import { Checkbox } from "./ui/checkbox";
 
 export default function OSList() {
   const [list, setList] = useState<OS[]>([]);
-  const [includeMinorVersions, setIncludeMinorVersions] = useState(true);
+  const [includeMinorVersions, setIncludeMinorVersions] = useState(false);
   const [filtered, setFiltered] = useState<OS[]>([]);
   const [loading, setLoading] = useState(true);
 
