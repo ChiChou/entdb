@@ -33,6 +33,9 @@ def name(version: str) -> str:
     major, *minor = map(int, version.split("."))
     minor = minor[0] if minor else 0
 
+    if major >= 26:
+        return f"macOS {major}.{minor}"
+
     if major >= 11:
         try:
             return f"macOS {MACOS_NAMES[major]}"

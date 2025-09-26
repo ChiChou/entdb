@@ -19,7 +19,7 @@ class Writer:
         self.conn = sqlite3.connect(self.path)
 
         self.create_tables()
-        self.osid = self._insert_os(name, build, version)
+        self.osid = self._insert_os(name, version, build)
 
     def create_tables(self):
         sql_file = Path(__file__).parent / "schema.sql"
