@@ -55,8 +55,7 @@ def main():
         print(subdir.name)
 
         with (subdir / "paths.txt").open("w") as fp:
-            for path in r.paths(build):
-                fp.write(path)
+            fp.write("\n".join(r.paths(build)))
 
         with KVStore(subdir / "blobs.index.json", subdir / "blobs.txt") as blobs_store:
             for b in r.binaries(build):
