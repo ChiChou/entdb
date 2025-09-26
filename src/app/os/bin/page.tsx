@@ -19,6 +19,28 @@ import { create } from "@/lib/kv";
 //   [key: string]: leaf | Entitlements | leaf[];
 // }
 
+function prettifyXml(src: string) {
+  const xmlDoc = new DOMParser().parseFromString(src, "application/xml");
+  const xsltDoc = new DOMParser().parseFromString(
+    `<xsl:stylesheet version="1.0"
+     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+     <xsl:output omit-xml-declaration="yes" indent="yes"/>
+        <xsl:template match="node()|@*">
+          <xsl:copy>
+            <xsl:apply-templates select="node()|@*"/>
+          </xsl:copy>
+        </xsl:template>
+    </xsl:stylesheet>`,
+    "application/xml",
+  );
+
+  const xsltProcessor = new XSLTProcessor();
+  xsltProcessor.importStylesheet(xsltDoc);
+  const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+  const resultXml = new XMLSerializer().serializeToString(resultDoc);
+  return resultXml;
+}
+
 export default function BinaryDetail() {
   const params = useSearchParams();
   const os = params.get("os");
@@ -51,7 +73,7 @@ export default function BinaryDetail() {
       const xml = blob.substring(0, location + 8);
       const json = JSON.parse(blob.substring(location + 8));
 
-      setXML(xml);
+      setXML(prettifyXml(xml));
       setXMLKeys(new Set(Object.keys(json)));
     }
 
