@@ -25,12 +25,18 @@ class Reader:
 
         self.images = {}
         for identity in plist["BuildIdentities"]:
+            if "Recovery" in identity["Info"]["Variant"]:
+                continue
+
             for name, info in identity["Manifest"].items():
                 if name in ("RestoreRamDisk", "Ap,ExclaveOS", "BaseSystem"):
                     continue
 
                 path: str = info.get("Info", {}).get("Path", "")
                 if path.endswith(".dmg") or path.endswith(".dmg.aea"):
+                    # todo: check if it's true for all firmwares
+                    if name in self.images:
+                        assert self.images[name] == path
                     self.images[name] = path
 
     def parse_restore(self, plist: dict):
