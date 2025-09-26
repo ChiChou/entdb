@@ -11,6 +11,7 @@ from ipsw.reader import Reader
 from ipsw.aea import get_key
 from ipsw.theapplewiki import get_page_name, fetch_page
 from osx.hdiutil import encrypted, mount_to, unmount
+from osx.product import name as macos_name
 from indexer.db import Writer
 from indexer.visitor import FileSystemVisitor
 from indexer.detect import is_macho
@@ -33,8 +34,21 @@ def filesystem_root(name: str):
 
 def build_database(ipsw: str, output: str):
     reader = Reader(ipsw)
+
+    joint_devices = "|".join(reader.devices)
+    if "iPhone" in joint_devices:
+        product_name = f"iOS {reader.version}"
+    elif "Mac" in joint_devices:
+        product_name = macos_name(reader.version)
+    else:
+        raise NotImplementedError(f"Device type {reader.devices} not supported yet")
+
     writer = Writer(
-        output, f"iOS {reader.version}", reader.build, reader.version, reader.devices
+        output,
+        product_name,
+        reader.build,
+        reader.version,
+        reader.devices,
     )
 
     with tempfile.TemporaryDirectory() as cwd:

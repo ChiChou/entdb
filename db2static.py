@@ -67,7 +67,7 @@ def main():
                 paths = r.owns_key(build, key)
                 keys_store.add(key, "\n".join(paths).encode())
 
-    with (output / 'list.json').open('w') as fp:
+    with (output / "list.json").open("w") as fp:
         json.dump(oslist, fp)
 
 
