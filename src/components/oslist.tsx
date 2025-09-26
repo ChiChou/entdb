@@ -3,15 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { OS } from "@/lib/types";
+import { Group } from "@/lib/types";
 import { addBasePath } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
-import { Checkbox } from "./ui/checkbox";
-
-interface Group {
-  name: string;
-  list: OS[];
-}
+// import { Checkbox } from "./ui/checkbox";
 
 function responseOK(r: Response) {
   if (!r.ok) {
