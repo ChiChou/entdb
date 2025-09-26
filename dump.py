@@ -4,41 +4,12 @@ import sqlite3
 import plistlib
 import json
 
-dbs = Path("sqlite")
-output = Path("output")
-output.mkdir(exist_ok=True)
+from kv import KVStore
 
 
-class KVStore:
-    def __init__(self, records_path: Path, data_path: Path):
-        self.records_path = records_path
-        self.data_file = data_path.open("wb")
-        self.cursor = 0
+def worker(args: tuple[Path, Path]):
+    dbfile, output = args
 
-        self.records = []
-        self.known_keys = set()
-
-    def add(self, key: str, value: bytes):
-        if key in self.known_keys:
-            raise ValueError(f"Duplicate key {key}")
-
-        self.records.append((key, self.cursor, len(value)))
-        self.data_file.write(value)
-        self.cursor += len(value)
-
-    def close(self):
-        with self.records_path.open("w") as fp:
-            json.dump(self.records, fp, separators=(",", ":"))
-        self.data_file.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-
-
-def worker(dbfile: Path):
     db = sqlite3.connect(str(dbfile))
 
     root = (output / dbfile.name).with_suffix("")
@@ -55,7 +26,7 @@ def worker(dbfile: Path):
         path_list.append(path_str)
 
     # dump paths
-    with (root / "paths").open("w") as fp:
+    with (root / "paths.txt").open("w") as fp:
         fp.write("\n".join(path_list))
 
     keys = {}
@@ -66,7 +37,7 @@ def worker(dbfile: Path):
             keys[key_id] = key
 
     # dump keys
-    with KVStore(root / "keys-index.json", root / "keys.bin") as kv_keys:
+    with KVStore(root / "keys.index.json", root / "keys.txt") as kv_keys:
         for key_id in keys:
             key = keys[key_id]
 
@@ -80,7 +51,7 @@ def worker(dbfile: Path):
             blob = "\n".join(files).encode("utf-8")
             kv_keys.add(key, blob)
 
-    with KVStore(root / "blobs-index.json", root / "blobs.bin") as kv_blobs:
+    with KVStore(root / "blobs.index.json", root / "blobs.txt") as kv_blobs:
         for path_id in paths:
             path_str = paths[path_id]
             rows = cursor.execute(
@@ -108,11 +79,22 @@ def worker(dbfile: Path):
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "databases", nargs="+", help="list of entitlement databases from ipsw"
+    )
+    parser.add_argument("-o", "--output", help="output directory")
+
+    args = parser.parse_args()
+
+    output = Path(args.output)
+    output.mkdir(parents=True, exist_ok=True)
+
     with Pool() as pool:
-        pool.map(worker, dbs.glob("*.db"))
+        pool.map(worker, [(Path(db), output) for db in args.databases])
 
 
 if __name__ == "__main__":
     main()
-
-    # worker(dbs / '13.0_17A577.db')
