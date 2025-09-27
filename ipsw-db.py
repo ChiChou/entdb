@@ -22,12 +22,10 @@ def filesystem_root(name: str):
     if name in ("OS", "User"):
         return "/"
 
-    prefix = "Cryptex1,"
-    suffix = "OS"
-
-    if name.startswith(prefix) and name.endswith(suffix):
-        between = name[len(prefix) : -len(suffix)]
-        return f"/System/Cryptexes/{between}/"
+    if name == "Cryptex1,SystemOS":
+        return "/System/Cryptexes/OS/"
+    elif name == "Cryptex1,AppOS":
+        return "/System/Cryptexes/App/"
 
     raise ValueError(f"Unknown name: {name}")
 
