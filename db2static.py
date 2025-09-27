@@ -39,6 +39,9 @@ def main():
                 paths = r.owns_key(build, key)
                 keys_store.add(key, "\n".join(paths).encode())
 
+        with open(subdir / 'meta.json') as fp:
+            json.dump(os, fp)
+
     with (output / "list.json").open("w") as fp:
         json.dump(oslist, fp)
 
