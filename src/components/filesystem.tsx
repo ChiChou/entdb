@@ -11,7 +11,7 @@ import Link from "next/link";
 
 function Tree({ item, os }: { item: TreeWithFullPath; os: string }) {
   return (
-    <ul className="ml-2 pl-2">
+    <ul className="ml-2 pl-2 overflow-x-hidden">
       {Object.entries(item).map(([key, value]) => {
         if (typeof value === "string") {
           return (

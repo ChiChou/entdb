@@ -70,7 +70,7 @@ export default function Keys() {
           ))}
         </div>
       ) : (
-        <div className="flex w-full flex-wrap gap-2">
+        <div className="flex w-full flex-wrap gap-2 overflow-x-clip">
           {filtered.map((key, index) => (
             <Badge
               variant="outline"
