@@ -95,23 +95,48 @@ export default function OSList() {
 
   return (
     <div>
-      {loading && <Skeleton className="h-[20px] w-[100px] rounded-full" />}
+      {loading && (
+        <div className="space-y-6">
+          <div className="mb-4 flex items-center">
+            <Skeleton className="h-4 w-4 mr-2" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+
+          {[1, 2, 3].map((group) => (
+            <section key={group} className="my-6">
+              <Skeleton className="h-8 w-32 my-4" />
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+                  <div key={item} className="p-4 border rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
 
       {!loading && groups.length === 0 && (
         <div className="text-center">Failed to fetch OS list</div>
       )}
 
-      <header className="mb-4">
-        <Checkbox
-          id="select-all"
-          className="mr-2"
-          checked={showLess}
-          onCheckedChange={(checked) => setShowLess(Boolean(checked))}
-        />
-        <label htmlFor="select-all" className="text-lg font-medium">
-          Show Less
-        </label>
-      </header>
+      {!loading && (
+        <header className="mb-4">
+          <Checkbox
+            id="select-all"
+            className="mr-2"
+            checked={showLess}
+            onCheckedChange={(checked) => setShowLess(Boolean(checked))}
+          />
+          <label htmlFor="select-all" className="text-lg font-medium">
+            Show Less
+          </label>
+        </header>
+      )}
 
       {groups.map((group) => (
         <section key={group.name} className="my-6">

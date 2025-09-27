@@ -7,6 +7,8 @@ import Link from "next/link";
 
 import { addBasePath } from "@/lib/env";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+
 import { create } from "@/lib/kv";
 
 export default function Keys() {
@@ -58,20 +60,27 @@ export default function Keys() {
       </div>
 
       {loading ? (
-        <p>Loading</p>
-      ) : (
-        <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filtered.map((key, index) => (
-            <li key={index} className="font-mono break-all text-sm">
-              <Link
-                href={`/os/find?key=${key}&os=${os}`}
-                className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
-              >
-                {key}
-              </Link>
-            </li>
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-8 bg-gray-200 rounded animate-pulse"
+              style={{ width: `${60 + Math.random() * 40}%` }}
+            />
           ))}
-        </ul>
+        </div>
+      ) : (
+        <div className="flex w-full flex-wrap gap-2">
+          {filtered.map((key, index) => (
+            <Badge
+              variant="outline"
+              key={index}
+              className="font-mono break-all text-sm"
+            >
+              <Link href={`/os/find?key=${key}&os=${os}`}>{key}</Link>
+            </Badge>
+          ))}
+        </div>
       )}
     </div>
   );
