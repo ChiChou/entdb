@@ -30,8 +30,11 @@ def filesystem_root(name: str):
     raise ValueError(f"Unknown name: {name}")
 
 
-def build_database(ipsw: str, output: str):
+def build_database(ipsw: str, output: Path, merge: bool):
     reader = Reader(ipsw)
+
+    dbname = "ent.db" if merge else f'{reader.version}_{reader.build}.db'
+    db = str(output / dbname)
 
     joint_devices = "|".join(reader.devices)
     if "iPhone" in joint_devices:
@@ -42,7 +45,7 @@ def build_database(ipsw: str, output: str):
         raise NotImplementedError(f"Device type {reader.devices} not supported yet")
 
     writer = Writer(
-        output,
+        db,
         product_name,
         reader.build,
         reader.version,
@@ -108,11 +111,16 @@ def main():
     )
     parser.add_argument("ipsws", type=str, nargs="+", help="Path to the .ipsw file(s)")
     parser.add_argument(
-        "-o", "--output", type=str, default="ent.db", help="Database output path"
+        "-o", "--output", type=str, default=".", help="Database output directory"
     )
+    parser.add_argument("-m", "--merge", action="store_true", help="merge to one unified sqlite database")
     args = parser.parse_args()
+
+    output = Path(args.output)
+    output.mkdir(parents=True, exist_ok=True)
+
     for ipsw in args.ipsws:
-        build_database(ipsw, args.output)
+        build_database(ipsw, output, args.merge)
 
 
 if __name__ == "__main__":
