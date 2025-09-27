@@ -23,7 +23,7 @@ function compareVersion(a: string, b: string) {
   for (let i = 0; i < len; i++) {
     const v1 = l1[i] || 0;
     const v2 = l2[i] || 0;
-    if (v1 !== v2) return v2 - v1;
+    if (v1 !== v2) return v1 - v2;
   }
 
   return 0;
