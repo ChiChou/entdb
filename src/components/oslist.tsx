@@ -15,6 +15,20 @@ function responseOK(r: Response) {
   return r;
 }
 
+function compareVersion(a: string, b: string) {
+  const l1 = a.split(".").map(Number);
+  const l2 = b.split(".").map(Number);
+  const len = Math.max(l1.length, l2.length);
+
+  for (let i = 0; i < len; i++) {
+    const v1 = l1[i] || 0;
+    const v2 = l2[i] || 0;
+    if (v1 !== v2) return v2 - v1;
+  }
+
+  return 0;
+}
+
 export default function OSList() {
   const [showLess, setShowLess] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -24,6 +38,8 @@ export default function OSList() {
   useEffect(() => {
     const set: Set<string> = new Set();
     for (const group of groups) {
+      group.list.sort((a, b) => compareVersion(b.version, a.version));
+
       if (group.name === "osx") {
         // keep everything
         group.list.forEach((item) => set.add(item.build));
@@ -40,7 +56,7 @@ export default function OSList() {
           }
         });
         bucket.values().forEach((items) => {
-          items.sort((a, b) => b.version.localeCompare(a.version));
+          items.sort((a, b) => compareVersion(b.version, a.version));
           const [first] = items;
           set.add(first?.build);
         });
