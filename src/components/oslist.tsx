@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { Group } from "@/lib/types";
+import { Group, OS } from "@/lib/types";
 import { addBasePath } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
-// import { Checkbox } from "./ui/checkbox";
+import { Checkbox } from "./ui/checkbox";
 
 function responseOK(r: Response) {
   if (!r.ok) {
@@ -16,9 +16,38 @@ function responseOK(r: Response) {
 }
 
 export default function OSList() {
-  // const [includeMinorVersions, setIncludeMinorVersions] = useState(false);
+  const [showLess, setShowLess] = useState(true);
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [highlights, setHighlights] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const set: Set<string> = new Set();
+    for (const group of groups) {
+      if (group.name === "osx") {
+        // keep everything
+        group.list.forEach((item) => set.add(item.build));
+      } else {
+        // keep only one for each major version
+        const bucket: Map<string, OS[]> = new Map();
+        group.list.forEach((item) => {
+          const [major] = item.version.split(".", 1);
+          const key = major.toString();
+          if (!bucket.has(key)) {
+            bucket.set(key, [item]);
+          } else {
+            bucket.get(key)!.push(item);
+          }
+        });
+        bucket.values().forEach((items) => {
+          items.sort((a, b) => b.version.localeCompare(a.version));
+          const [first] = items;
+          set.add(first?.build);
+        });
+      }
+    }
+    setHighlights(set);
+  }, [groups]);
 
   useEffect(() => {
     setLoading(true);
@@ -56,37 +85,37 @@ export default function OSList() {
         <div className="text-center">Failed to fetch OS list</div>
       )}
 
-      {/*<header className="mb-4">
+      <header className="mb-4">
         <Checkbox
           id="select-all"
           className="mr-2"
-          checked={includeMinorVersions}
-          onCheckedChange={(checked) =>
-            setIncludeMinorVersions(Boolean(checked))
-          }
+          checked={showLess}
+          onCheckedChange={(checked) => setShowLess(Boolean(checked))}
         />
         <label htmlFor="select-all" className="text-lg font-medium">
-          Include Minor Versions
+          Show Less
         </label>
-      </header>*/}
+      </header>
 
       {groups.map((group) => (
         <section key={group.name} className="my-6">
           <h2 className="text-2xl font-light my-4">{group.name}</h2>
           <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-            {group.list.map((os, index) => (
-              <li key={index} className="list-none">
-                <Link
-                  href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                  className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
-                >
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg">{os.name}</h2>
-                    <div className="text-sm text-gray-500">{os.build}</div>
-                  </div>
-                </Link>
-              </li>
-            ))}
+            {group.list
+              .filter((os) => !showLess || highlights.has(os.build))
+              .map((os, index) => (
+                <li key={index} className="list-none">
+                  <Link
+                    href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
+                    className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg">{os.name}</h2>
+                      <div className="text-sm text-gray-500">{os.build}</div>
+                    </div>
+                  </Link>
+                </li>
+              ))}
           </ul>
         </section>
       ))}
