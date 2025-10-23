@@ -1,6 +1,8 @@
-# unwrap
+# Entitlement Database Collector
 
 Build entitlement databases from ipsw and legacy OS X installer packages.
+
+For web frontend, please check `web` branch.
 
 Supports legacy encrypted filesystem image (iOS < 10). It requires network connection to query [theapplewiki](https://theapplewiki.com/) for encryption keys. Also for aea decryption, it is required to be online.
 
