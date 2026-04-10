@@ -1,0 +1,75 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+  repository_dispatch:
+    types: [data-updated]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        id: configure-pages
+        with:
+          static_site_generator: next
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build with Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path }}
+
+      - name: Download latest data release
+        run: |
+          curl -sL https://api.github.com/repos/ChiChou/entdb-data/releases/latest \
+            | jq -r '.assets[] | select(.name == "data.tar.gz") | .browser_download_url' \
+            | xargs -r curl -L -o data.tar.gz
+          mkdir -p out/data
+          tar -xzf data.tar.gz -C out/data
+
+      - name: Download SQLite database
+        run: |
+          curl -sL https://api.github.com/repos/ChiChou/entdb-data/releases/latest \
+            | jq -r '.assets[] | select(.name == "ent.db") | .browser_download_url' \
+            | xargs -r curl -L -o out/data/ent.db
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
