@@ -44,9 +44,21 @@ export default function BinaryDetail() {
   const [xml, setXML] = useState<string>("");
   const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<PathHistory[]>([]);
-  const [compareWith, setCompareWith] = useState<string | null>(null);
   const [compareXml, setCompareXml] = useState<string>("");
   const [compareLoading, setCompareLoading] = useState(false);
+
+  // Read compareWith from URL
+  const compareWith = params.get("diff");
+
+  const setCompareWith = (value: string | null) => {
+    const newParams = new URLSearchParams(params.toString());
+    if (value) {
+      newParams.set("diff", value);
+    } else {
+      newParams.delete("diff");
+    }
+    router.replace(`/os/bin?${newParams.toString()}`, { scroll: false });
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -220,16 +232,9 @@ export default function BinaryDetail() {
 
       {/* Main content */}
       <main className="flex-1 min-w-0 space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold">Entitlements</h2>
-            <p className="truncate" title={path || ""}>
-              <code className="text-blue-600 dark:text-blue-400 text-sm">
-                {path}
-              </code>
-            </p>
-          </div>
-        </div>
+        <p className="truncate text-muted-foreground" title={path || ""}>
+          <code className="text-sm">{path}</code>
+        </p>
 
         {loading && (
           <div className="space-y-2">
