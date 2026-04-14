@@ -24,6 +24,8 @@ export default function OSDetailLayout({
   const params = useSearchParams();
   const pathname = usePathname();
   const os = params.get("os") || "";
+  const binaryPath = params.get("path") || "";
+  const binaryName = binaryPath ? binaryPath.split("/").pop() : "";
 
   const currentPage = pathname.includes("/files")
     ? "files"
@@ -40,7 +42,7 @@ export default function OSDetailLayout({
   return (
     <div className="flex flex-col flex-1 min-h-0 p-4 md:p-6" suppressHydrationWarning>
       <header className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 shrink-0">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -48,13 +50,23 @@ export default function OSDetailLayout({
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <span className="text-muted-foreground">
-                  {os?.split("/")[0]}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{os?.split("/")[0]}</span>
+                  <VersionSwitcher currentOs={os} />
+                </div>
               </BreadcrumbItem>
+              {currentPage === "bin" && binaryName && (
+                <>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <span className="text-foreground font-medium">
+                      {binaryName}
+                    </span>
+                  </BreadcrumbItem>
+                </>
+              )}
             </BreadcrumbList>
           </Breadcrumb>
-          <VersionSwitcher currentOs={os} />
         </div>
 
         <nav className="flex items-center gap-4 text-sm sm:ml-auto">
@@ -70,12 +82,6 @@ export default function OSDetailLayout({
           >
             Browse Files
           </Link>
-          {currentPage === "find" && (
-            <span className="font-medium">Search Results</span>
-          )}
-          {currentPage === "bin" && (
-            <span className="font-medium">Binary Detail</span>
-          )}
         </nav>
       </header>
 
