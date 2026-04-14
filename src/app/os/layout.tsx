@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 import {
   Breadcrumb,
@@ -9,12 +10,11 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VersionSwitcher } from "@/components/version-switcher";
 
 import { addBasePath } from "@/lib/env";
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export default function OSDetailLayout({
   children,
@@ -23,10 +23,9 @@ export default function OSDetailLayout({
 }) {
   const params = useSearchParams();
   const pathname = usePathname();
-  const router = useRouter();
   const os = params.get("os") || "";
 
-  const currentTab = pathname.includes("/files")
+  const currentPage = pathname.includes("/files")
     ? "files"
     : pathname.includes("/bin")
       ? "bin"
@@ -38,14 +37,9 @@ export default function OSDetailLayout({
     if (os) document.title = `${os || ""} - Entitlement Database`;
   }, [os]);
 
-  const handleTabChange = (tab: string) => {
-    if (tab === "bin") return;
-    router.push(`/os/${tab}?os=${os}`);
-  };
-
   return (
     <div className="p-4 md:p-8" suppressHydrationWarning>
-      <header className="mb-6 space-y-4">
+      <header className="mb-6 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Breadcrumb>
             <BreadcrumbList>
@@ -63,18 +57,26 @@ export default function OSDetailLayout({
           <VersionSwitcher currentOs={os} />
         </div>
 
-        <Tabs value={currentTab} onValueChange={handleTabChange}>
-          <TabsList>
-            <TabsTrigger value="keys">Entitlement Keys</TabsTrigger>
-            <TabsTrigger value="files">Browse Files</TabsTrigger>
-            {currentTab === "find" && (
-              <TabsTrigger value="find">Search Results</TabsTrigger>
-            )}
-            {currentTab === "bin" && (
-              <TabsTrigger value="bin">Binary Detail</TabsTrigger>
-            )}
-          </TabsList>
-        </Tabs>
+        <nav className="flex items-center gap-4 text-sm">
+          <Link
+            href={addBasePath(`/os/keys?os=${os}`)}
+            className={currentPage === "keys" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
+          >
+            Entitlement Keys
+          </Link>
+          <Link
+            href={addBasePath(`/os/files?os=${os}`)}
+            className={currentPage === "files" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
+          >
+            Browse Files
+          </Link>
+          {currentPage === "find" && (
+            <span className="font-medium">Search Results</span>
+          )}
+          {currentPage === "bin" && (
+            <span className="font-medium">Binary Detail</span>
+          )}
+        </nav>
       </header>
 
       <div>{children}</div>
