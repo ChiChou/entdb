@@ -131,7 +131,7 @@ export default function BinaryDetail() {
             <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
               Version History ({availableHistory.length})
             </h3>
-            <div className="space-y-1 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="space-y-1">
               {groupedHistory.map(([major, versions]) => (
                 <details
                   key={major}

@@ -1,9 +1,17 @@
+const BUILD_TIME = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
+
 export function Footer() {
   return (
     <footer className="border-t border-border bg-muted/30 mt-auto">
       <div className="px-4 md:px-8 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <span>entdb</span>
+          <div className="flex items-center gap-2">
+            <span>entdb</span>
+            <span className="text-muted-foreground/50">·</span>
+            <span className="text-xs">
+              Built {new Date(BUILD_TIME).toLocaleDateString()}
+            </span>
+          </div>
 
           <nav className="flex items-center gap-4">
             <a
@@ -12,7 +20,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
             >
-              Website
+              Source Code
             </a>
             <a
               href="https://github.com/ChiChou/entdb-indexer"
@@ -20,7 +28,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
             >
-              Indexer
+              Firmware Indexer
             </a>
             <a
               href="https://github.com/ChiChou/entdb-data"
@@ -28,7 +36,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
             >
-              Data
+              Raw Data
             </a>
             <span className="text-muted-foreground/30">|</span>
             <a
