@@ -6,11 +6,13 @@ import {
   createElement,
   Prism as SyntaxHighlighter,
 } from "react-syntax-highlighter";
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { tomorrow, prism } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useTheme } from "next-themes";
 
 import Link from "next/link";
-import { GitCompare } from "lucide-react";
+import { GitCompare, Download } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
+import { DownloadButton } from "@/components/download-button";
 import { DiffViewer } from "@/components/diff-viewer";
 
 import { addBasePath } from "@/lib/env";
@@ -36,6 +38,8 @@ export default function BinaryDetail() {
     redirect("/404");
   }
 
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [xml, setXML] = useState<string>("");
   const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
@@ -43,6 +47,12 @@ export default function BinaryDetail() {
   const [compareWith, setCompareWith] = useState<string | null>(null);
   const [compareXml, setCompareXml] = useState<string>("");
   const [compareLoading, setCompareLoading] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const syntaxTheme = mounted && resolvedTheme === "light" ? prism : tomorrow;
 
   useEffect(() => {
     async function load() {
@@ -114,9 +124,9 @@ export default function BinaryDetail() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      {/* Version history sidebar - now on left and wider */}
+      {/* Version history sidebar - on right */}
       {hasVersionHistory && (
-        <aside className="lg:w-64 shrink-0 order-2 lg:order-first">
+        <aside className="lg:w-64 shrink-0 order-2 lg:order-last">
           <div className="lg:sticky lg:top-4">
             <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
               Version History ({availableHistory.length})
@@ -214,7 +224,7 @@ export default function BinaryDetail() {
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">Entitlements</h2>
             <p className="truncate" title={path || ""}>
-              <code className="text-red-800 dark:text-red-400 text-sm">
+              <code className="text-blue-600 dark:text-blue-400 text-sm">
                 {path}
               </code>
             </p>
@@ -243,13 +253,17 @@ export default function BinaryDetail() {
 
         {!loading && !compareWith && xml && (
           <div className="relative">
-            <div className="absolute right-2 top-2 z-10">
+            <div className="absolute right-2 top-2 z-10 flex gap-1">
               <CopyButton text={xml} />
+              <DownloadButton
+                content={xml}
+                filename={`${path?.split("/").pop() || "entitlements"}.plist`}
+              />
             </div>
             <SyntaxHighlighter
               language="xml"
               showLineNumbers={true}
-              style={tomorrow}
+              style={syntaxTheme}
               customStyle={{
                 margin: 0,
                 borderRadius: "0.5rem",
@@ -273,7 +287,7 @@ export default function BinaryDetail() {
                             } as rendererNode,
                           ],
                           properties: {
-                            className: ["text-blue-200", "hover:underline"],
+                            className: ["text-blue-600", "dark:text-blue-300", "hover:underline"],
                             href: addBasePath(
                               `/os/find?key=${encodeURIComponent(
                                 node.value as string,
