@@ -2,8 +2,6 @@
 
 Web frontend for the Entitlement Database — browse iOS and macOS entitlements across OS versions.
 
-**Live site:** [https://chichou.github.io/entdb](https://chichou.github.io/entdb)
-
 ## Features
 
 - Browse entitlement keys by OS version
