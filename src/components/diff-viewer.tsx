@@ -1,48 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { FileDiff } from "@pierre/diffs/react";
+import { parseDiffFromFile } from "@pierre/diffs";
+
 import { diffPlistKeys, type PlistDiff } from "@/lib/plist";
-
-interface DiffLine {
-  type: "unchanged" | "added" | "removed" | "changed";
-  oldLine?: string;
-  newLine?: string;
-  key?: string;
-}
-
-function computeLineDiff(oldLines: string[], newLines: string[]): DiffLine[] {
-  const result: DiffLine[] = [];
-  const oldSet = new Set(oldLines);
-  const newSet = new Set(newLines);
-
-  const maxLen = Math.max(oldLines.length, newLines.length);
-
-  let oi = 0;
-  let ni = 0;
-
-  while (oi < oldLines.length || ni < newLines.length) {
-    const oldLine = oldLines[oi];
-    const newLine = newLines[ni];
-
-    if (oldLine === newLine) {
-      result.push({ type: "unchanged", oldLine, newLine });
-      oi++;
-      ni++;
-    } else if (oldLine && !newSet.has(oldLine)) {
-      result.push({ type: "removed", oldLine, newLine: undefined });
-      oi++;
-    } else if (newLine && !oldSet.has(newLine)) {
-      result.push({ type: "added", oldLine: undefined, newLine });
-      ni++;
-    } else {
-      result.push({ type: "changed", oldLine, newLine });
-      oi++;
-      ni++;
-    }
-  }
-
-  return result;
-}
 
 interface DiffViewerProps {
   oldXml: string;
@@ -57,89 +19,28 @@ export function DiffViewer({
   oldLabel,
   newLabel,
 }: DiffViewerProps) {
-  const diff = useMemo(() => diffPlistKeys(oldXml, newXml), [oldXml, newXml]);
-
-  const oldLines = useMemo(
-    () => oldXml.split("\n").filter((l) => l.trim()),
-    [oldXml],
-  );
-  const newLines = useMemo(
-    () => newXml.split("\n").filter((l) => l.trim()),
-    [newXml],
+  const keysDiff = useMemo(
+    () => diffPlistKeys(oldXml, newXml),
+    [oldXml, newXml],
   );
 
-  const lineDiff = useMemo(
-    () => computeLineDiff(oldLines, newLines),
-    [oldLines, newLines],
+  const fileDiff = useMemo(
+    () =>
+      parseDiffFromFile(
+        { name: `${oldLabel}.plist`, contents: oldXml },
+        { name: `${newLabel}.plist`, contents: newXml },
+      ),
+    [oldXml, newXml, oldLabel, newLabel],
   );
 
   return (
     <div className="space-y-4">
-      <DiffSummary diff={diff} />
-      <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-t px-3 py-2 font-semibold border-b">
-          {oldLabel}
-        </div>
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-t px-3 py-2 font-semibold border-b">
-          {newLabel}
-        </div>
-        <div className="col-span-2">
-          <div className="grid grid-cols-2 gap-2">
-            {lineDiff.map((line, i) => (
-              <DiffLineRow key={i} line={line} />
-            ))}
-          </div>
-        </div>
+      <DiffSummary diff={keysDiff} />
+      <div className="rounded-lg overflow-hidden border text-sm">
+        <FileDiff fileDiff={fileDiff} options={{ diffStyle: "split" }} />
       </div>
     </div>
   );
-}
-
-function DiffLineRow({ line }: { line: DiffLine }) {
-  const baseClasses = "px-3 py-0.5 font-mono text-xs whitespace-pre overflow-x-auto";
-
-  switch (line.type) {
-    case "unchanged":
-      return (
-        <>
-          <div className={`${baseClasses} bg-gray-50 dark:bg-gray-900`}>
-            {line.oldLine}
-          </div>
-          <div className={`${baseClasses} bg-gray-50 dark:bg-gray-900`}>
-            {line.newLine}
-          </div>
-        </>
-      );
-    case "removed":
-      return (
-        <>
-          <div className={`${baseClasses} bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200`}>
-            {line.oldLine}
-          </div>
-          <div className={`${baseClasses} bg-gray-100 dark:bg-gray-800`} />
-        </>
-      );
-    case "added":
-      return (
-        <>
-          <div className={`${baseClasses} bg-gray-100 dark:bg-gray-800`} />
-          <div className={`${baseClasses} bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200`}>
-            {line.newLine}
-          </div>
-        </>
-      );
-    case "changed":
-      return (
-        <>
-          <div className={`${baseClasses} bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200`}>
-            {line.oldLine}
-          </div>
-          <div className={`${baseClasses} bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200`}>
-            {line.newLine}
-          </div>
-        </>
-      );
-  }
 }
 
 function DiffSummary({ diff }: { diff: PlistDiff }) {

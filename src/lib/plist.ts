@@ -32,13 +32,26 @@ export function normalizePlist(xml: string): string {
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<plist version="1.0">',
-    "<dict>",
-    ...entries.map((e) => `<key>${e.key}</key>\n${e.value}`),
-    "</dict>",
+    "  <dict>",
+    ...entries.map((e) => `    <key>${e.key}</key>\n    ${indentValue(e.value)}`),
+    "  </dict>",
     "</plist>",
   ];
 
   return lines.join("\n");
+}
+
+function indentValue(xml: string): string {
+  // Simple indentation for single-line values
+  if (!xml.includes("\n") && !xml.includes("><")) {
+    return xml;
+  }
+  // For complex values, add indentation after each closing >
+  return xml
+    .replace(/></g, ">\n    <")
+    .split("\n")
+    .map((line, i) => (i === 0 ? line : "    " + line))
+    .join("\n");
 }
 
 export interface PlistDiff {
