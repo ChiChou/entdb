@@ -1,57 +1,112 @@
-export function parsePlist(xml: string): Document {
+type PlistValue =
+  | string
+  | number
+  | boolean
+  | PlistValue[]
+  | { [key: string]: PlistValue };
+
+export function plistToJson(xml: string): { [key: string]: PlistValue } {
   const parser = new DOMParser();
-  return parser.parseFromString(xml, "application/xml");
-}
-
-interface PlistEntry {
-  key: string;
-  value: string;
-}
-
-export function normalizePlist(xml: string): string {
-  const doc = parsePlist(xml);
+  const doc = parser.parseFromString(xml, "application/xml");
   const rootDict = doc.querySelector("plist > dict");
-  if (!rootDict) return xml;
+  if (!rootDict) return {};
+  return parseDict(rootDict);
+}
 
-  const entries: PlistEntry[] = [];
-  const children = Array.from(rootDict.children);
-
+function parseDict(dict: Element): { [key: string]: PlistValue } {
+  const result: { [key: string]: PlistValue } = {};
+  const children = Array.from(dict.children);
   for (let i = 0; i < children.length; i += 2) {
     const keyEl = children[i];
     const valueEl = children[i + 1];
     if (keyEl?.tagName === "key" && valueEl) {
-      entries.push({
-        key: keyEl.textContent || "",
-        value: new XMLSerializer().serializeToString(valueEl),
-      });
+      result[keyEl.textContent || ""] = parseValue(valueEl);
     }
   }
+  return result;
+}
 
-  entries.sort((a, b) => a.key.localeCompare(b.key));
+function parseValue(el: Element): PlistValue {
+  switch (el.tagName) {
+    case "string":
+      return el.textContent || "";
+    case "integer":
+      return parseInt(el.textContent || "0", 10);
+    case "real":
+      return parseFloat(el.textContent || "0");
+    case "true":
+      return true;
+    case "false":
+      return false;
+    case "array":
+      return Array.from(el.children).map(parseValue);
+    case "dict":
+      return parseDict(el);
+    case "data":
+      return el.textContent || "";
+    default:
+      return el.textContent || "";
+  }
+}
 
-  const lines = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<plist version="1.0">',
-    "  <dict>",
-    ...entries.map((e) => `    <key>${e.key}</key>\n    ${indentValue(e.value)}`),
-    "  </dict>",
-    "</plist>",
-  ];
+export function jsonToPlistXml(
+  obj: { [key: string]: PlistValue },
+  indent = 0,
+): string {
+  const pad = "  ".repeat(indent);
+  const keys = Object.keys(obj).sort();
+  const lines: string[] = [];
+
+  for (const key of keys) {
+    lines.push(`${pad}<key>${escapeXml(key)}</key>`);
+    lines.push(valueToXml(obj[key], indent));
+  }
 
   return lines.join("\n");
 }
 
-function indentValue(xml: string): string {
-  // Simple indentation for single-line values
-  if (!xml.includes("\n") && !xml.includes("><")) {
-    return xml;
+function valueToXml(val: PlistValue, indent: number): string {
+  const pad = "  ".repeat(indent);
+
+  if (val === true) return `${pad}<true/>`;
+  if (val === false) return `${pad}<false/>`;
+  if (typeof val === "string") return `${pad}<string>${escapeXml(val)}</string>`;
+  if (typeof val === "number") {
+    return Number.isInteger(val)
+      ? `${pad}<integer>${val}</integer>`
+      : `${pad}<real>${val}</real>`;
   }
-  // For complex values, add indentation after each closing >
-  return xml
-    .replace(/></g, ">\n    <")
-    .split("\n")
-    .map((line, i) => (i === 0 ? line : "    " + line))
-    .join("\n");
+  if (Array.isArray(val)) {
+    if (val.length === 0) return `${pad}<array/>`;
+    const items = val.map((v) => valueToXml(v, indent + 1)).join("\n");
+    return `${pad}<array>\n${items}\n${pad}</array>`;
+  }
+  if (typeof val === "object") {
+    const inner = jsonToPlistXml(val, indent + 1);
+    if (!inner) return `${pad}<dict/>`;
+    return `${pad}<dict>\n${inner}\n${pad}</dict>`;
+  }
+  return `${pad}<string>${escapeXml(String(val))}</string>`;
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export function normalizePlist(xml: string): string {
+  const json = plistToJson(xml);
+  const body = jsonToPlistXml(json, 2);
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<plist version="1.0">',
+    "  <dict>",
+    body,
+    "  </dict>",
+    "</plist>",
+  ].join("\n");
 }
 
 export interface PlistDiff {
@@ -62,11 +117,11 @@ export interface PlistDiff {
 }
 
 export function diffPlistKeys(oldXml: string, newXml: string): PlistDiff {
-  const oldKeys = extractRootKeys(oldXml);
-  const newKeys = extractRootKeys(newXml);
+  const oldJson = plistToJson(oldXml);
+  const newJson = plistToJson(newXml);
 
-  const oldDoc = parsePlist(oldXml);
-  const newDoc = parsePlist(newXml);
+  const oldKeys = new Set(Object.keys(oldJson));
+  const newKeys = new Set(Object.keys(newJson));
 
   const added: string[] = [];
   const removed: string[] = [];
@@ -84,9 +139,7 @@ export function diffPlistKeys(oldXml: string, newXml: string): PlistDiff {
     } else if (inOld && !inNew) {
       removed.push(key);
     } else {
-      const oldValue = getKeyValue(oldDoc, key);
-      const newValue = getKeyValue(newDoc, key);
-      if (oldValue === newValue) {
+      if (JSON.stringify(oldJson[key]) === JSON.stringify(newJson[key])) {
         unchanged.push(key);
       } else {
         changed.push(key);
@@ -95,62 +148,4 @@ export function diffPlistKeys(oldXml: string, newXml: string): PlistDiff {
   }
 
   return { added, removed, changed, unchanged };
-}
-
-function extractRootKeys(xml: string): Set<string> {
-  const doc = parsePlist(xml);
-  const keys = new Set<string>();
-  const rootDict = doc.querySelector("plist > dict");
-  if (!rootDict) return keys;
-
-  const keyElements = rootDict.querySelectorAll(":scope > key");
-  keyElements.forEach((el) => {
-    if (el.textContent) keys.add(el.textContent);
-  });
-  return keys;
-}
-
-function getKeyValue(doc: Document, keyName: string): string {
-  const rootDict = doc.querySelector("plist > dict");
-  if (!rootDict) return "";
-
-  const keys = rootDict.querySelectorAll(":scope > key");
-  for (const key of keys) {
-    if (key.textContent === keyName) {
-      const value = key.nextElementSibling;
-      if (value) {
-        return value.outerHTML;
-      }
-    }
-  }
-  return "";
-}
-
-export function prettifyXml(src: string): string {
-  // Remove DOCTYPE to avoid DTD loading issues
-  const cleanSrc = src.replace(/<!DOCTYPE[^>]*>/i, "");
-
-  const xmlDoc = new DOMParser().parseFromString(cleanSrc, "application/xml");
-  if (xmlDoc.querySelector("parsererror")) {
-    return src;
-  }
-
-  const xsltDoc = new DOMParser().parseFromString(
-    `<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-      <xsl:output omit-xml-declaration="yes" indent="yes"/>
-      <xsl:template match="node()|@*">
-        <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>
-      </xsl:template>
-    </xsl:stylesheet>`,
-    "application/xml",
-  );
-
-  try {
-    const xsltProcessor = new XSLTProcessor();
-    xsltProcessor.importStylesheet(xsltDoc);
-    const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-    return new XMLSerializer().serializeToString(resultDoc);
-  } catch {
-    return src;
-  }
 }

@@ -14,7 +14,7 @@ import { DiffViewer } from "@/components/diff-viewer";
 import { addBasePath } from "@/lib/env";
 import { createEngine } from "@/lib/engine";
 import type { PathHistory } from "@/lib/engine/types";
-import { normalizePlist, prettifyXml } from "@/lib/plist";
+import { normalizePlist } from "@/lib/plist";
 
 export default function BinaryDetail() {
   const params = useSearchParams();
@@ -47,7 +47,7 @@ export default function BinaryDetail() {
       const rawXml = await engine.getBinaryXML(build, path!);
 
       try {
-        const prettified = prettifyXml(rawXml);
+        const prettified = normalizePlist(rawXml);
         setXML(prettified);
 
         const parser = new DOMParser();
@@ -74,7 +74,7 @@ export default function BinaryDetail() {
     async function loadCompare() {
       const engine = await createEngine(group);
       const rawXml = await engine.getBinaryXML(compareWith!, path!);
-      const prettified = prettifyXml(rawXml);
+      const prettified = normalizePlist(rawXml);
       setCompareXml(prettified);
     }
 
