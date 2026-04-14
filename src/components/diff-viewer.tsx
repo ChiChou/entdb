@@ -286,32 +286,50 @@ function DiffSummary({ diff }: { diff: PlistDiff }) {
         <span className="font-medium">{totalChanges} changes</span>
         <span className="text-muted-foreground">({summaryParts.join(", ")})</span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="pt-2 pl-6 space-y-2">
+      <CollapsibleContent className="pt-2 pl-6 space-y-3">
         {diff.added.length > 0 && (
-          <div className="flex items-start gap-2 text-sm">
-            <span className="inline-block w-3 h-3 rounded bg-green-500 mt-1 shrink-0" />
-            <span>
-              <strong>{diff.added.length}</strong> added:{" "}
-              <code className="text-xs break-all">{diff.added.join(", ")}</code>
-            </span>
+          <div className="text-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-block w-3 h-3 rounded bg-green-500 shrink-0" />
+              <strong>{diff.added.length}</strong> <span className="text-muted-foreground">added</span>
+            </div>
+            <div className="pl-5 flex flex-wrap gap-1">
+              {diff.added.map((key) => (
+                <code key={key} className="text-xs bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
+                  {key}
+                </code>
+              ))}
+            </div>
           </div>
         )}
         {diff.removed.length > 0 && (
-          <div className="flex items-start gap-2 text-sm">
-            <span className="inline-block w-3 h-3 rounded bg-red-500 mt-1 shrink-0" />
-            <span>
-              <strong>{diff.removed.length}</strong> removed:{" "}
-              <code className="text-xs break-all">{diff.removed.join(", ")}</code>
-            </span>
+          <div className="text-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-block w-3 h-3 rounded bg-red-500 shrink-0" />
+              <strong>{diff.removed.length}</strong> <span className="text-muted-foreground">removed</span>
+            </div>
+            <div className="pl-5 flex flex-wrap gap-1">
+              {diff.removed.map((key) => (
+                <code key={key} className="text-xs bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded">
+                  {key}
+                </code>
+              ))}
+            </div>
           </div>
         )}
         {diff.changed.length > 0 && (
-          <div className="flex items-start gap-2 text-sm">
-            <span className="inline-block w-3 h-3 rounded bg-yellow-500 mt-1 shrink-0" />
-            <span>
-              <strong>{diff.changed.length}</strong> changed:{" "}
-              <code className="text-xs break-all">{diff.changed.join(", ")}</code>
-            </span>
+          <div className="text-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-block w-3 h-3 rounded bg-yellow-500 shrink-0" />
+              <strong>{diff.changed.length}</strong> <span className="text-muted-foreground">changed</span>
+            </div>
+            <div className="pl-5 flex flex-wrap gap-1">
+              {diff.changed.map((key) => (
+                <code key={key} className="text-xs bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 px-1.5 py-0.5 rounded">
+                  {key}
+                </code>
+              ))}
+            </div>
           </div>
         )}
       </CollapsibleContent>
