@@ -232,7 +232,7 @@ export default function Keys() {
           {keys.length === 0 ? (
             <p>No entitlement keys found for this OS version.</p>
           ) : (
-            <p>No keys match "{keyword}"</p>
+            <p>No keys match &quot;{keyword}&quot;</p>
           )}
         </div>
       ) : (
