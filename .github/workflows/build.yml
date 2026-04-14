@@ -17,6 +17,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages_ready: ${{ steps.configure-pages.outcome == 'success' }}
 
     steps:
       - name: Checkout code
@@ -40,9 +42,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         id: configure-pages
+        continue-on-error: true
         with:
           static_site_generator: next
-          enablement: true
 
       - name: Install dependencies
         run: npm ci
@@ -50,7 +52,7 @@ jobs:
       - name: Build with Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path }}
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path || '' }}
 
       - name: Download latest data release
         run: |
@@ -67,6 +69,7 @@ jobs:
             | xargs -r curl -L -o out/data/ent.db
 
       - name: Upload artifact
+        if: steps.configure-pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
@@ -78,9 +81,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      needs.build.outputs.pages_ready == 'true' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'repository_dispatch'
+      github.event_name == 'repository_dispatch')
 
     steps:
       - name: Deploy to GitHub Pages
