@@ -55,18 +55,30 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path || '' }}
 
       - name: Download latest data release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -sL https://api.github.com/repos/ChiChou/entdb-data/releases/latest \
-            | jq -r '.assets[] | select(.name == "data.tar.gz") | .browser_download_url' \
-            | xargs -r curl -L -o data.tar.gz
+          release_json=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/ChiChou/entdb-data/releases/latest)
+
+          data_url=$(echo "$release_json" | jq -er '.assets[] | select(.name == "data.tar.gz") | .browser_download_url')
           mkdir -p out/data
+          curl -fL "$data_url" -o data.tar.gz
           tar -xzf data.tar.gz -C out/data
 
       - name: Download SQLite database
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -sL https://api.github.com/repos/ChiChou/entdb-data/releases/latest \
-            | jq -r '.assets[] | select(.name == "ent.db") | .browser_download_url' \
-            | xargs -r curl -L -o out/data/ent.db
+          release_json=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/ChiChou/entdb-data/releases/latest)
+
+          db_url=$(echo "$release_json" | jq -er '.assets[] | select(.name == "ent.db") | .browser_download_url')
+          curl -fL "$db_url" -o out/data/ent.db
 
       - name: Upload artifact
         if: steps.configure-pages.outcome == 'success'
