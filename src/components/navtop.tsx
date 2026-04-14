@@ -40,25 +40,7 @@ export function NavTop() {
           entdb
         </Link>
       </h1>
-      <nav className="flex items-center gap-4 text-sm">
-        <a
-          href="https://github.com/chichou/entdb-indexer"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          GitHub
-        </a>
-        <a
-          href="https://infosec.exchange/@codecolorist"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Mastodon
-        </a>
-        <ThemeToggle />
-      </nav>
+      <ThemeToggle />
     </header>
   );
 }
