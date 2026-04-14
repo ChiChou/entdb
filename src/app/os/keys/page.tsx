@@ -62,18 +62,18 @@ function KeyBadge({
   return (
     <Link
       href={`/os/find?key=${encodeURIComponent(keyName)}&os=${os}`}
-      className="inline-block px-2 py-1 bg-muted hover:bg-accent rounded text-sm font-mono transition-colors group"
+      className="block py-1 font-mono text-muted-foreground hover:text-foreground transition-colors group truncate"
       title={keyName}
     >
       {suffix ? (
         <>
-          <span className="text-muted-foreground group-hover:text-muted-foreground/70 text-xs">
+          <span className="text-muted-foreground/60 group-hover:text-muted-foreground text-sm">
             {prefix}
           </span>
-          <span className="text-foreground font-medium">{suffix}</span>
+          <span className="text-foreground/80 group-hover:text-foreground">{suffix}</span>
         </>
       ) : (
-        <span className="text-foreground">{keyName}</span>
+        <span>{keyName}</span>
       )}
     </Link>
   );
@@ -292,16 +292,45 @@ export default function Keys() {
           )}
         </div>
       ) : (
-        <div className="space-y-0.5">
-          {sortedPrefixes.map((prefix) => (
-            <KeyGroup
-              key={prefix}
-              prefix={prefix}
-              keys={grouped[prefix]}
-              os={os}
-              forceOpen={forceOpen}
-            />
-          ))}
+        <div>
+          {/* Single keys in multi-column grid */}
+          {(() => {
+            const singleKeys = sortedPrefixes.filter(
+              (p) => grouped[p].length === 1 && grouped[p][0] === p
+            );
+            const groupKeys = sortedPrefixes.filter(
+              (p) => grouped[p].length > 1 || grouped[p][0] !== p
+            );
+            return (
+              <>
+                {singleKeys.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 mb-4">
+                    {singleKeys.map((prefix) => (
+                      <KeyBadge
+                        key={prefix}
+                        keyName={grouped[prefix][0]}
+                        prefix=""
+                        os={os}
+                      />
+                    ))}
+                  </div>
+                )}
+                {groupKeys.length > 0 && (
+                  <div className="space-y-0.5">
+                    {groupKeys.map((prefix) => (
+                      <KeyGroup
+                        key={prefix}
+                        prefix={prefix}
+                        keys={grouped[prefix]}
+                        os={os}
+                        forceOpen={forceOpen}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

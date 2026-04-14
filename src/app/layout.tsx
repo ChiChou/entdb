@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 import { NavTop } from "@/components/navtop";
@@ -28,15 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NavTop />
-        <Toaster />
-        <Suspense>
-          <main className="flex flex-col">{children}</main>
-        </Suspense>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <NavTop />
+          <Toaster />
+          <Suspense>
+            <main className="flex flex-col">{children}</main>
+          </Suspense>
+        </ThemeProvider>
       </body>
     </html>
   );

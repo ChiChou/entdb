@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { redirect, useSearchParams } from "next/navigation";
+import { redirect, useSearchParams, useRouter } from "next/navigation";
 import {
   createElement,
   Prism as SyntaxHighlighter,
 } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+import Link from "next/link";
+import { GitCompare } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { DiffViewer } from "@/components/diff-viewer";
 
@@ -18,9 +20,9 @@ import { normalizePlist } from "@/lib/plist";
 
 export default function BinaryDetail() {
   const params = useSearchParams();
+  const router = useRouter();
   const os = params.get("os");
   const path = params.get("path");
-  const compareWith = params.get("compare");
 
   const [group, build] = os ? os.split("/") : ["", ""];
 
@@ -38,9 +40,9 @@ export default function BinaryDetail() {
   const [xml, setXML] = useState<string>("");
   const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<PathHistory[]>([]);
+  const [compareWith, setCompareWith] = useState<string | null>(null);
   const [compareXml, setCompareXml] = useState<string>("");
   const [compareLoading, setCompareLoading] = useState(false);
-  const [compareError, setCompareError] = useState<string>("");
 
   useEffect(() => {
     async function load() {
@@ -70,10 +72,10 @@ export default function BinaryDetail() {
   }, [group, build, path]);
 
   useEffect(() => {
-    if (!compareWith || !group) return;
-
-    setCompareError("");
-    setCompareXml("");
+    if (!compareWith || !group) {
+      setCompareXml("");
+      return;
+    }
 
     async function loadCompare() {
       const engine = await createEngine(group);
@@ -84,27 +86,12 @@ export default function BinaryDetail() {
 
     setCompareLoading(true);
     loadCompare()
-      .catch((err) => {
-        setCompareError(err.message || "Failed to load comparison");
-      })
+      .catch(() => setCompareXml(""))
       .finally(() => setCompareLoading(false));
   }, [group, compareWith, path]);
 
-  const normalizedXml = useMemo(
-    () => (xml ? normalizePlist(xml) : ""),
-    [xml],
-  );
-  const normalizedCompareXml = useMemo(
-    () => (compareXml ? normalizePlist(compareXml) : ""),
-    [compareXml],
-  );
-
   const availableHistory = history.filter((h) => h.available);
-  const currentOs = history.find(
-    (h) => h.os.build === build || `${h.os.version}_${h.os.build}` === build,
-  );
 
-  // Group versions by major version
   const groupedHistory = useMemo(() => {
     const groups: { [major: string]: typeof availableHistory } = {};
     for (const h of availableHistory) {
@@ -115,40 +102,11 @@ export default function BinaryDetail() {
     return Object.entries(groups).sort(([a], [b]) => Number(b) - Number(a));
   }, [availableHistory]);
 
-  const renderVersionLink = (h: typeof availableHistory[0]) => {
-    const isCurrent =
-      h.os.build === build || `${h.os.version}_${h.os.build}` === build;
-    const isComparing = compareWith === `${h.os.version}_${h.os.build}`;
-    const versionTag = `${h.os.version}_${h.os.build}`;
-
-    if (isCurrent) {
-      return (
-        <span
-          key={h.os.build}
-          className="block px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-medium"
-        >
-          {h.os.version} (current)
-        </span>
-      );
-    }
-
-    const href = isComparing
-      ? addBasePath(`/os/bin?os=${encodeURIComponent(os!)}&path=${encodeURIComponent(path!)}`)
-      : addBasePath(`/os/bin?os=${encodeURIComponent(os!)}&path=${encodeURIComponent(path!)}&compare=${encodeURIComponent(versionTag)}`);
-
-    return (
-      <a
-        key={h.os.build}
-        href={href}
-        className={`block px-2 py-1 text-xs rounded transition-colors ${
-          isComparing
-            ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-            : "hover:bg-accent"
-        }`}
-      >
-        {h.os.version}
-        {isComparing && " (comparing)"}
-      </a>
+  const switchVersion = (versionTag: string) => {
+    router.push(
+      addBasePath(
+        `/os/bin?os=${encodeURIComponent(group + "/" + versionTag)}&path=${encodeURIComponent(path!)}`
+      )
     );
   };
 
@@ -156,6 +114,100 @@ export default function BinaryDetail() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
+      {/* Version history sidebar - now on left and wider */}
+      {hasVersionHistory && (
+        <aside className="lg:w-64 shrink-0 order-2 lg:order-first">
+          <div className="lg:sticky lg:top-4">
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
+              Version History ({availableHistory.length})
+            </h3>
+            <div className="space-y-1 max-h-[70vh] overflow-y-auto pr-2">
+              {groupedHistory.map(([major, versions]) => (
+                <details
+                  key={major}
+                  open={versions.some(
+                    (h) =>
+                      h.os.build === build ||
+                      `${h.os.version}_${h.os.build}` === build
+                  )}
+                  className="group"
+                >
+                  <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-2 py-1.5 px-2 rounded hover:bg-accent">
+                    <span className="group-open:rotate-90 transition-transform text-xs">
+                      ▶
+                    </span>
+                    <span className="flex-1">{group === "iOS" ? "iOS" : group} {major}.x</span>
+                    <span className="text-xs text-muted-foreground/60">
+                      {versions.length}
+                    </span>
+                  </summary>
+                  <div className="ml-4 mt-1 space-y-0.5 border-l border-border pl-3">
+                    {versions.map((h) => {
+                      const isCurrent =
+                        h.os.build === build ||
+                        `${h.os.version}_${h.os.build}` === build;
+                      const versionTag = `${h.os.version}_${h.os.build}`;
+                      const isComparing = compareWith === versionTag;
+
+                      return (
+                        <div
+                          key={h.os.build}
+                          className={`flex items-center gap-1 px-2 py-1 text-sm rounded transition-colors ${
+                            isCurrent
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : isComparing
+                                ? "bg-yellow-100 dark:bg-yellow-900/50"
+                                : "hover:bg-accent"
+                          }`}
+                        >
+                          <button
+                            onClick={() => !isCurrent && switchVersion(versionTag)}
+                            disabled={isCurrent}
+                            className={`flex-1 text-left ${
+                              isCurrent
+                                ? "cursor-default"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {h.os.version}
+                            {isCurrent && (
+                              <span className="ml-1 text-xs opacity-70">
+                                (current)
+                              </span>
+                            )}
+                            {isComparing && (
+                              <span className="ml-1 text-xs text-yellow-700 dark:text-yellow-300">
+                                (diff)
+                              </span>
+                            )}
+                          </button>
+                          {!isCurrent && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCompareWith(isComparing ? null : versionTag);
+                              }}
+                              className={`p-1 rounded transition-colors ${
+                                isComparing
+                                  ? "text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                              }`}
+                              title={isComparing ? "Close diff" : `Compare with ${h.os.version}`}
+                            >
+                              <GitCompare className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+        </aside>
+      )}
+
       {/* Main content */}
       <main className="flex-1 min-w-0 space-y-4">
         <div className="flex items-start justify-between gap-4">
@@ -176,19 +228,16 @@ export default function BinaryDetail() {
           </div>
         )}
 
-        {!loading && compareWith && compareError && (
-          <div className="border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
-            <p className="font-medium">Comparison failed</p>
-            <p className="text-sm mt-1">{compareError}</p>
-          </div>
+        {!loading && compareWith && compareLoading && (
+          <div className="h-64 bg-muted rounded animate-pulse" />
         )}
 
-        {!loading && compareWith && !compareLoading && !compareError && normalizedCompareXml && (
+        {!loading && compareWith && !compareLoading && compareXml && (
           <DiffViewer
-            oldXml={normalizedCompareXml}
-            newXml={normalizedXml}
-            oldLabel={`${compareWith}`}
-            newLabel={currentOs ? `${currentOs.os.version}_${currentOs.os.build}` : build}
+            oldXml={compareXml}
+            newXml={xml}
+            oldLabel={compareWith}
+            newLabel={build}
           />
         )}
 
@@ -258,48 +307,12 @@ export default function BinaryDetail() {
           </div>
         )}
 
-        {compareLoading && (
-          <div className="h-64 bg-muted rounded animate-pulse" />
+        {!loading && !xml && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>No entitlement data found for this binary.</p>
+          </div>
         )}
       </main>
-
-      {/* Version history sidebar */}
-      {hasVersionHistory && (
-        <aside className="lg:w-48 shrink-0">
-          <div className="lg:sticky lg:top-4">
-            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
-              History ({availableHistory.length})
-            </h3>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-              {groupedHistory.map(([major, versions]) => (
-                <details
-                  key={major}
-                  open={versions.some(
-                    (h) =>
-                      h.os.build === build ||
-                      `${h.os.version}_${h.os.build}` === build ||
-                      compareWith === `${h.os.version}_${h.os.build}`
-                  )}
-                  className="group"
-                >
-                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 py-1">
-                    <span className="group-open:rotate-90 transition-transform">
-                      ▶
-                    </span>
-                    iOS {major}.x
-                    <span className="ml-auto text-muted-foreground/60">
-                      {versions.length}
-                    </span>
-                  </summary>
-                  <div className="ml-3 mt-1 space-y-0.5 border-l pl-2">
-                    {versions.map(renderVersionLink)}
-                  </div>
-                </details>
-              ))}
-            </div>
-          </div>
-        </aside>
-      )}
     </div>
   );
 }

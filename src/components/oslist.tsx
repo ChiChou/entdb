@@ -123,16 +123,29 @@ export default function OSList() {
       )}
 
       {!loading && (
-        <header className="mb-4">
-          <Checkbox
-            id="select-all"
-            className="mr-2"
-            checked={showLess}
-            onCheckedChange={(checked) => setShowLess(Boolean(checked))}
-          />
-          <label htmlFor="select-all" className="text-lg font-medium">
-            Show Less
-          </label>
+        <header className="mb-6 flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
+            <button
+              onClick={() => setShowLess(true)}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                showLess
+                  ? "bg-background text-foreground shadow-sm font-medium"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Latest Only
+            </button>
+            <button
+              onClick={() => setShowLess(false)}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                !showLess
+                  ? "bg-background text-foreground shadow-sm font-medium"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All Versions
+            </button>
+          </div>
         </header>
       )}
 
@@ -146,11 +159,13 @@ export default function OSList() {
                 <li key={index} className="list-none">
                   <Link
                     href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                    className="block p-4 border rounded-lg shadow-sm hover:shadow-md transition-all hover:bg-gray-50"
+                    className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
                   >
                     <div className="flex justify-between items-center">
                       <h2 className="text-lg">{os.name}</h2>
-                      <div className="text-sm text-gray-500">{os.build}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {os.build}
+                      </div>
                     </div>
                   </Link>
                 </li>

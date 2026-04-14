@@ -81,20 +81,15 @@ function Tree({
           expandAll={expandAll}
         />
       ))}
-      {files.length > 0 && (
-        <li>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4">
-            {files.map(([key, value]) => (
-              <FileItem
-                key={value as string}
-                name={key}
-                fullPath={value as string}
-                os={os}
-              />
-            ))}
-          </div>
+      {files.map(([key, value]) => (
+        <li key={value as string}>
+          <FileItem
+            name={key}
+            fullPath={value as string}
+            os={os}
+          />
         </li>
-      )}
+      ))}
     </ul>
   );
 }
@@ -139,18 +134,16 @@ function TreeFolder({
           </span>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className={isShallow ? "ml-6 mt-1" : "ml-4 pl-2 border-l border-border"}>
+          <div className={isShallow ? "ml-6 mt-1 space-y-0.5" : "ml-4 pl-2 border-l border-border"}>
             {isShallow ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4">
-                {Object.entries(item).map(([key, value]) => (
-                  <FileItem
-                    key={value as string}
-                    name={key}
-                    fullPath={value as string}
-                    os={os}
-                  />
-                ))}
-              </div>
+              Object.entries(item).map(([key, value]) => (
+                <FileItem
+                  key={value as string}
+                  name={key}
+                  fullPath={value as string}
+                  os={os}
+                />
+              ))
             ) : (
               <Tree item={item} os={os} depth={depth + 1} expandAll={expandAll} />
             )}
