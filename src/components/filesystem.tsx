@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -31,7 +31,7 @@ function getMaxDepth(item: TreeWithFullPath, current = 0): number {
   return max;
 }
 
-function FileItem({
+const FileItem = memo(function FileItem({
   name,
   fullPath,
   os,
@@ -52,7 +52,7 @@ function FileItem({
       </Link>
     </div>
   );
-}
+});
 
 function Tree({
   item,
@@ -154,7 +154,7 @@ function TreeFolder({
   );
 }
 
-export default function FileSystem({
+const FileSystem = memo(function FileSystem({
   list,
   os,
   expandAll = null,
@@ -163,10 +163,12 @@ export default function FileSystem({
   os: string;
   expandAll?: boolean | null;
 }) {
-  const tree = filesToTree(list);
+  const tree = useMemo(() => filesToTree(list), [list]);
   return (
     <div>
       <Tree item={tree} os={os} depth={0} expandAll={expandAll} />
     </div>
   );
-}
+});
+
+export default FileSystem;

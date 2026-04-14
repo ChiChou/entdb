@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { redirect, useSearchParams } from "next/navigation";
-import { useDebounce } from "use-debounce";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -30,9 +29,16 @@ export default function FindByKey() {
   const [loading, setLoading] = useState(true);
   const [paths, setPaths] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [expandAll, setExpandAll] = useState<boolean | null>(null);
 
-  const [debouncedKeyword] = useDebounce(keyword, 200);
+  // Debounce keyword with 300ms delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [keyword]);
 
   useEffect(() => {
     async function fetchPaths() {
