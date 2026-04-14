@@ -200,10 +200,11 @@ export default function OSList() {
                         href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
                         className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
                       >
-                        <div className="flex justify-between items-center">
-                          <h2 className="text-lg">{os.name}</h2>
-                          <div className="text-sm text-muted-foreground">
-                            {os.build}
+                        <div className="flex justify-between items-start">
+                          <h2 className="text-lg font-medium">{group.name === "iOS" ? os.version : os.name}</h2>
+                          <div className="text-right space-y-1">
+                            {group.name !== "iOS" && <div className="text-sm font-medium">{os.version}</div>}
+                            <div className="text-xs text-muted-foreground font-mono">{os.build}</div>
                           </div>
                         </div>
                       </Link>
@@ -224,10 +225,11 @@ export default function OSList() {
                             href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
                             className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
                           >
-                            <div className="flex justify-between items-center">
-                              <h2 className="text-lg">{os.name}</h2>
-                              <div className="text-sm text-muted-foreground">
-                                {os.build}
+                            <div className="flex justify-between items-start">
+                              <h2 className="text-lg font-medium">{group.name === "iOS" ? os.version : os.name}</h2>
+                              <div className="text-right space-y-1">
+                                {group.name !== "iOS" && <div className="text-sm font-medium">{os.version}</div>}
+                                <div className="text-xs text-muted-foreground font-mono">{os.build}</div>
                               </div>
                             </div>
                           </Link>
