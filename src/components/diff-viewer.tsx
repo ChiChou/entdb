@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { FileDiff } from "@pierre/diffs/react";
-import { parseDiffFromFile } from "@pierre/diffs";
-
-import { diffPlistKeys, normalizePlist, type PlistDiff } from "@/lib/plist";
+import { diffPlistKeys, type PlistDiff } from "@/lib/plist";
 
 interface DiffViewerProps {
   oldXml: string;
@@ -13,27 +10,61 @@ interface DiffViewerProps {
   newLabel: string;
 }
 
+type DiffLine = {
+  type: "context" | "add" | "remove";
+  content: string;
+  oldNum?: number;
+  newNum?: number;
+};
+
+function computeDiff(oldText: string, newText: string): DiffLine[] {
+  const oldLines = oldText.split("\n");
+  const newLines = newText.split("\n");
+
+  const oldSet = new Set(oldLines);
+  const newSet = new Set(newLines);
+
+  const result: DiffLine[] = [];
+  let oi = 0,
+    ni = 0;
+
+  while (oi < oldLines.length || ni < newLines.length) {
+    const oldLine = oldLines[oi];
+    const newLine = newLines[ni];
+
+    if (oi < oldLines.length && ni < newLines.length && oldLine === newLine) {
+      // Skip context lines - only show changes
+      oi++;
+      ni++;
+    } else if (oi < oldLines.length && !newSet.has(oldLine)) {
+      result.push({ type: "remove", content: oldLine, oldNum: oi + 1 });
+      oi++;
+    } else if (ni < newLines.length && !oldSet.has(newLine)) {
+      result.push({ type: "add", content: newLine, newNum: ni + 1 });
+      ni++;
+    } else {
+      oi++;
+      ni++;
+    }
+  }
+
+  return result;
+}
+
 export function DiffViewer({
   oldXml,
   newXml,
   oldLabel,
   newLabel,
 }: DiffViewerProps) {
-  const normalizedOld = useMemo(() => normalizePlist(oldXml), [oldXml]);
-  const normalizedNew = useMemo(() => normalizePlist(newXml), [newXml]);
-
   const keysDiff = useMemo(
     () => diffPlistKeys(oldXml, newXml),
     [oldXml, newXml],
   );
 
-  const fileDiff = useMemo(
-    () =>
-      parseDiffFromFile(
-        { name: `${oldLabel}.plist`, contents: normalizedOld },
-        { name: `${newLabel}.plist`, contents: normalizedNew },
-      ),
-    [normalizedOld, normalizedNew, oldLabel, newLabel],
+  const diffLines = useMemo(
+    () => computeDiff(oldXml, newXml),
+    [oldXml, newXml],
   );
 
   const hasChanges =
@@ -52,15 +83,30 @@ export function DiffViewer({
   return (
     <div className="space-y-4">
       <DiffSummary diff={keysDiff} />
-      <div className="rounded-lg overflow-hidden border">
-        <FileDiff
-          fileDiff={fileDiff}
-          options={{
-            diffStyle: "split",
-            expandUnchanged: false,
-            collapsedContextThreshold: 0,
-          }}
-        />
+      <div className="rounded-lg overflow-hidden border bg-gray-900 text-gray-100">
+        <div className="flex justify-between px-4 py-2 bg-gray-800 text-sm font-medium border-b border-gray-700">
+          <span className="text-red-400">- {oldLabel}</span>
+          <span className="text-green-400">+ {newLabel}</span>
+        </div>
+        <pre className="p-4 overflow-x-auto text-xs font-mono">
+          {diffLines.map((line, i) => (
+            <div
+              key={i}
+              className={
+                line.type === "remove"
+                  ? "bg-red-900/40 text-red-200"
+                  : line.type === "add"
+                    ? "bg-green-900/40 text-green-200"
+                    : ""
+              }
+            >
+              <span className="select-none opacity-50 mr-2">
+                {line.type === "remove" ? "-" : line.type === "add" ? "+" : " "}
+              </span>
+              {line.content}
+            </div>
+          ))}
+        </pre>
       </div>
     </div>
   );
