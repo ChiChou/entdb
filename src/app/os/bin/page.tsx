@@ -40,6 +40,7 @@ export default function BinaryDetail() {
   const [history, setHistory] = useState<PathHistory[]>([]);
   const [compareXml, setCompareXml] = useState<string>("");
   const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState<string>("");
 
   useEffect(() => {
     async function load() {
@@ -71,6 +72,9 @@ export default function BinaryDetail() {
   useEffect(() => {
     if (!compareWith || !group) return;
 
+    setCompareError("");
+    setCompareXml("");
+
     async function loadCompare() {
       const engine = await createEngine(group);
       const rawXml = await engine.getBinaryXML(compareWith!, path!);
@@ -79,7 +83,11 @@ export default function BinaryDetail() {
     }
 
     setCompareLoading(true);
-    loadCompare().finally(() => setCompareLoading(false));
+    loadCompare()
+      .catch((err) => {
+        setCompareError(err.message || "Failed to load comparison");
+      })
+      .finally(() => setCompareLoading(false));
   }, [group, compareWith, path]);
 
   const normalizedXml = useMemo(
@@ -162,7 +170,14 @@ export default function BinaryDetail() {
 
         {loading && <p>Loading...</p>}
 
-        {!loading && compareWith && !compareLoading && normalizedCompareXml && (
+        {!loading && compareWith && compareError && (
+          <div className="border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
+            <p className="font-medium">Comparison failed</p>
+            <p className="text-sm mt-1">{compareError}</p>
+          </div>
+        )}
+
+        {!loading && compareWith && !compareLoading && !compareError && normalizedCompareXml && (
           <DiffViewer
             oldXml={normalizedCompareXml}
             newXml={normalizedXml}
