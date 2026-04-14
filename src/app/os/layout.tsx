@@ -39,44 +39,46 @@ export default function OSDetailLayout({
 
   return (
     <div className="p-4 md:p-8" suppressHydrationWarning>
-      <header className="mb-6 space-y-3">
+      <header className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href={addBasePath("/")}>Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <span className="text-muted-foreground">
-                  {os?.split("/")[0]}
-                </span>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <VersionSwitcher currentOs={os} />
-        </div>
+          <div className="flex items-center gap-4">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href={addBasePath("/")}>Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <span className="text-muted-foreground">
+                    {os?.split("/")[0]}
+                  </span>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <VersionSwitcher currentOs={os} />
+          </div>
 
-        <nav className="flex items-center gap-4 text-sm">
-          <Link
-            href={addBasePath(`/os/keys?os=${os}`)}
-            className={currentPage === "keys" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
-          >
-            Entitlement Keys
-          </Link>
-          <Link
-            href={addBasePath(`/os/files?os=${os}`)}
-            className={currentPage === "files" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
-          >
-            Browse Files
-          </Link>
-          {currentPage === "find" && (
-            <span className="font-medium">Search Results</span>
-          )}
-          {currentPage === "bin" && (
-            <span className="font-medium">Binary Detail</span>
-          )}
-        </nav>
+          <nav className="flex items-center gap-4 text-sm sm:ml-auto">
+            <Link
+              href={`/os/keys?os=${os}`}
+              className={currentPage === "keys" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
+            >
+              Entitlement Keys
+            </Link>
+            <Link
+              href={`/os/files?os=${os}`}
+              className={currentPage === "files" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
+            >
+              Browse Files
+            </Link>
+            {currentPage === "find" && (
+              <span className="font-medium">Search Results</span>
+            )}
+            {currentPage === "bin" && (
+              <span className="font-medium">Binary Detail</span>
+            )}
+          </nav>
+        </div>
       </header>
 
       <div>{children}</div>
