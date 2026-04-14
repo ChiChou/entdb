@@ -1,31 +1,23 @@
 import type { Engine } from "./types";
 import { WASMEngine } from "./wasm";
+import { checkWASMSupport as checkSQLiteWASMSupport } from "./wasm";
 import { KVEngine } from "./kv";
 
 let wasmSupported: boolean | null = null;
+const wasmDisabled = process.env.NEXT_PUBLIC_USE_WASM === "0";
 
 async function checkWASMSupport(): Promise<boolean> {
   if (wasmSupported !== null) return wasmSupported;
 
-  try {
-    if (typeof WebAssembly === "undefined") {
-      wasmSupported = false;
-      return false;
-    }
-
-    await WebAssembly.instantiate(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
-
-    await import("@sqlite.org/sqlite-wasm");
-
-    wasmSupported = true;
-    return true;
-  } catch {
-    wasmSupported = false;
-    return false;
-  }
+  wasmSupported = await checkSQLiteWASMSupport();
+  return wasmSupported;
 }
 
 export async function createEngine(group: string): Promise<Engine> {
+  if (wasmDisabled) {
+    return new KVEngine(group);
+  }
+
   const supported = await checkWASMSupport();
   if (supported) {
     return new WASMEngine();

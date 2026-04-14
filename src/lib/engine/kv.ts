@@ -1,6 +1,6 @@
 import type { Engine } from "./types";
 import type { OS } from "@/lib/types";
-import { addBasePath, dataBaseURL } from "@/lib/env";
+import { dataBaseURL } from "@/lib/env";
 import { fetchText, fetchLines } from "@/lib/client";
 
 interface KVRecord {
@@ -55,14 +55,14 @@ export class KVEngine implements Engine {
   }
 
   async listOS(): Promise<OS[]> {
-    const list = await fetchText(addBasePath(`${this.#baseURL}/list.json`));
+    const list = await fetchText(`${this.#baseURL}/list.json`);
     return JSON.parse(list);
   }
 
   async getPaths(build: string): Promise<string[]> {
     const os = await this.findOS(build);
     const tag = `${os.version}_${build}`;
-    return fetchLines(addBasePath(`${this.#baseURL}/${tag}/paths.txt`));
+    return fetchLines(`${this.#baseURL}/${tag}/paths.txt`);
   }
 
   async getBinaryXML(build: string, path: string): Promise<string> {
