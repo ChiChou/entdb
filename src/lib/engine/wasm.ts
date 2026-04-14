@@ -1,4 +1,4 @@
-import type { Engine } from "./types";
+import type { Engine, PathHistory } from "./types";
 import type { OS } from "@/lib/types";
 import { dataBaseURL } from "@/lib/env";
 
@@ -196,5 +196,24 @@ export class WASMEngine implements Engine {
       returnValue: "resultRows",
     });
     return rows.map((row) => row[0] as string);
+  }
+
+  async getPathHistory(path: string): Promise<PathHistory[]> {
+    const db = await getDB();
+    const osList = await this.listOS();
+
+    const rows = db.exec({
+      sql: `SELECT DISTINCT os.build FROM bin JOIN os ON bin.osid=os.id WHERE bin.path=?`,
+      bind: [path],
+      rowMode: "array",
+      returnValue: "resultRows",
+    });
+
+    const availableBuilds = new Set(rows.map((row) => row[0] as string));
+
+    return osList.map((os) => ({
+      os,
+      available: availableBuilds.has(os.build),
+    }));
   }
 }

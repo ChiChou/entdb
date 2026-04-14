@@ -1,4 +1,4 @@
-import type { Engine } from "./types";
+import type { Engine, PathHistory } from "./types";
 import type { OS } from "@/lib/types";
 import { dataBaseURL } from "@/lib/env";
 import { fetchText, fetchLines } from "@/lib/client";
@@ -40,6 +40,10 @@ class KVStore {
       }
       return r.text();
     });
+  }
+
+  has(key: string): boolean {
+    return this.#index.has(key);
   }
 
   *keys(): IterableIterator<string> {
@@ -91,6 +95,32 @@ export class KVEngine implements Engine {
     const reader = await this.openKV(`${this.#baseURL}/${tag}/keys`);
     const lines = await reader.get(key);
     return lines.split("\n").filter(Boolean);
+  }
+
+  async getPathHistory(path: string): Promise<PathHistory[]> {
+    const osList = await this.listOS();
+    const results: PathHistory[] = [];
+
+    const checks = osList.map(async (os) => {
+      const tag = `${os.version}_${os.build}`;
+      try {
+        const reader = await this.openKV(`${this.#baseURL}/${tag}/blobs`);
+        return { os, available: reader.has(path) };
+      } catch {
+        return { os, available: false };
+      }
+    });
+
+    const settled = await Promise.all(checks);
+    return settled.sort((a, b) => {
+      const vA = a.os.version.split(".").map(Number);
+      const vB = b.os.version.split(".").map(Number);
+      for (let i = 0; i < Math.max(vA.length, vB.length); i++) {
+        const diff = (vB[i] || 0) - (vA[i] || 0);
+        if (diff !== 0) return diff;
+      }
+      return 0;
+    });
   }
 
   #osCache: OS[] | null = null;

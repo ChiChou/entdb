@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { redirect, useSearchParams } from "next/navigation";
 import {
   createElement,
@@ -9,36 +9,18 @@ import {
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import { CopyButton } from "@/components/copy-button";
+import { DiffViewer } from "@/components/diff-viewer";
 
 import { addBasePath } from "@/lib/env";
 import { createEngine } from "@/lib/engine";
-
-function prettifyXml(src: string) {
-  const xmlDoc = new DOMParser().parseFromString(src, "application/xml");
-  const xsltDoc = new DOMParser().parseFromString(
-    `<xsl:stylesheet version="1.0"
-     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-     <xsl:output omit-xml-declaration="yes" indent="yes"/>
-        <xsl:template match="node()|@*">
-          <xsl:copy>
-            <xsl:apply-templates select="node()|@*"/>
-          </xsl:copy>
-        </xsl:template>
-    </xsl:stylesheet>`,
-    "application/xml",
-  );
-
-  const xsltProcessor = new XSLTProcessor();
-  xsltProcessor.importStylesheet(xsltDoc);
-  const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
-  const resultXml = new XMLSerializer().serializeToString(resultDoc);
-  return resultXml;
-}
+import type { PathHistory } from "@/lib/engine/types";
+import { normalizePlist, prettifyXml } from "@/lib/plist";
 
 export default function BinaryDetail() {
   const params = useSearchParams();
   const os = params.get("os");
   const path = params.get("path");
+  const compareWith = params.get("compare");
 
   const [group, build] = os ? os.split("/") : ["", ""];
 
@@ -55,6 +37,9 @@ export default function BinaryDetail() {
   const [loading, setLoading] = useState(false);
   const [xml, setXML] = useState<string>("");
   const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
+  const [history, setHistory] = useState<PathHistory[]>([]);
+  const [compareXml, setCompareXml] = useState<string>("");
+  const [compareLoading, setCompareLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -74,11 +59,42 @@ export default function BinaryDetail() {
       } catch {
         setXML(rawXml);
       }
+
+      const hist = await engine.getPathHistory(path!);
+      setHistory(hist);
     }
 
     setLoading(true);
     load().finally(() => setLoading(false));
   }, [group, build, path]);
+
+  useEffect(() => {
+    if (!compareWith || !group) return;
+
+    async function loadCompare() {
+      const engine = await createEngine(group);
+      const rawXml = await engine.getBinaryXML(compareWith!, path!);
+      const prettified = prettifyXml(rawXml);
+      setCompareXml(prettified);
+    }
+
+    setCompareLoading(true);
+    loadCompare().finally(() => setCompareLoading(false));
+  }, [group, compareWith, path]);
+
+  const normalizedXml = useMemo(
+    () => (xml ? normalizePlist(xml) : ""),
+    [xml],
+  );
+  const normalizedCompareXml = useMemo(
+    () => (compareXml ? normalizePlist(compareXml) : ""),
+    [compareXml],
+  );
+
+  const availableHistory = history.filter((h) => h.available);
+  const currentOs = history.find(
+    (h) => h.os.build === build || `${h.os.version}_${h.os.build}` === build,
+  );
 
   return (
     <div>
@@ -87,7 +103,7 @@ export default function BinaryDetail() {
           <div>
             <h2 className="text-xl font-semibold">Entitlements of</h2>
             <p>
-              <code className="text-red-800 break-all font-thin text-sm">
+              <code className="text-red-800 dark:text-red-400 break-all font-thin text-sm">
                 {path}
               </code>
             </p>
@@ -95,8 +111,67 @@ export default function BinaryDetail() {
           {!loading && xml && <CopyButton text={xml} />}
         </div>
 
+        {availableHistory.length > 1 && (
+          <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+            <h3 className="font-semibold mb-2">Version History</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              This binary exists in {availableHistory.length} OS versions.
+              Select a version to compare:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {availableHistory.map((h) => {
+                const isCurrent =
+                  h.os.build === build ||
+                  `${h.os.version}_${h.os.build}` === build;
+                const isComparing = compareWith === `${h.os.version}_${h.os.build}`;
+                const versionTag = `${h.os.version}_${h.os.build}`;
+
+                if (isCurrent) {
+                  return (
+                    <span
+                      key={h.os.build}
+                      className="px-2 py-1 text-sm rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-medium"
+                    >
+                      {h.os.version} (current)
+                    </span>
+                  );
+                }
+
+                const href = isComparing
+                  ? addBasePath(`/os/bin?os=${encodeURIComponent(os!)}&path=${encodeURIComponent(path!)}`)
+                  : addBasePath(`/os/bin?os=${encodeURIComponent(os!)}&path=${encodeURIComponent(path!)}&compare=${encodeURIComponent(versionTag)}`);
+
+                return (
+                  <a
+                    key={h.os.build}
+                    href={href}
+                    className={`px-2 py-1 text-sm rounded transition-colors ${
+                      isComparing
+                        ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
+                        : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {h.os.version}
+                    {isComparing && " (comparing)"}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {loading && <p>Loading...</p>}
-        {!loading && xml && (
+
+        {!loading && compareWith && !compareLoading && normalizedCompareXml && (
+          <DiffViewer
+            oldXml={normalizedCompareXml}
+            newXml={normalizedXml}
+            oldLabel={`${compareWith}`}
+            newLabel={currentOs ? `${currentOs.os.version}_${currentOs.os.build}` : build}
+          />
+        )}
+
+        {!loading && !compareWith && xml && (
           <SyntaxHighlighter
             language="xml"
             showLineNumbers={true}
@@ -155,6 +230,8 @@ export default function BinaryDetail() {
             {xml}
           </SyntaxHighlighter>
         )}
+
+        {compareLoading && <p>Loading comparison...</p>}
       </main>
     </div>
   );
