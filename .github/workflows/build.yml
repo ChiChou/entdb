@@ -68,18 +68,6 @@ jobs:
           curl -fL "$data_url" -o data.tar.gz
           tar -xzf data.tar.gz -C out/data
 
-      - name: Download SQLite database
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          release_json=$(curl -fsSL \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/ChiChou/entdb-data/releases/latest)
-
-          db_url=$(echo "$release_json" | jq -er '.assets[] | select(.name == "ent.db") | .browser_download_url')
-          curl -fL "$db_url" -o out/data/ent.db
-
       - name: Upload artifact
         if: steps.configure-pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
