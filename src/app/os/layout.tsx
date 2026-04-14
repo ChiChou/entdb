@@ -40,7 +40,7 @@ export default function OSDetailLayout({
 
   const handleTabChange = (tab: string) => {
     if (tab === "bin") return;
-    router.push(addBasePath(`/os/${tab}?os=${os}`));
+    router.push(`/os/${tab}?os=${os}`);
   };
 
   return (
