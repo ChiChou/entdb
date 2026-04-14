@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 import { Group, OS } from "@/lib/types";
 import { addBasePath } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
-import { Checkbox } from "./ui/checkbox";
 
 function responseOK(r: Response) {
   if (!r.ok) {
@@ -27,6 +26,30 @@ function compareVersion(a: string, b: string) {
   }
 
   return 0;
+}
+
+interface MajorGroup {
+  major: string;
+  versions: OS[];
+}
+
+function groupByMajor(list: OS[]): MajorGroup[] {
+  const bucket = new Map<string, OS[]>();
+
+  for (const os of list) {
+    const major = os.version.split(".")[0];
+    if (!bucket.has(major)) {
+      bucket.set(major, []);
+    }
+    bucket.get(major)!.push(os);
+  }
+
+  return Array.from(bucket.entries())
+    .map(([major, versions]) => {
+      versions.sort((a, b) => compareVersion(b.version, a.version));
+      return { major, versions };
+    })
+    .sort((a, b) => Number(b.major) - Number(a.major));
 }
 
 export default function OSList() {
@@ -123,7 +146,7 @@ export default function OSList() {
       )}
 
       {!loading && (
-        <header className="mb-6 flex items-center gap-2">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
             <button
               onClick={() => setShowLess(true)}
@@ -133,7 +156,7 @@ export default function OSList() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Latest Only
+              Major Releases
             </button>
             <button
               onClick={() => setShowLess(false)}
@@ -143,36 +166,81 @@ export default function OSList() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              All Versions
+              All Builds
             </button>
           </div>
+          <nav className="flex items-center gap-3 text-sm">
+            {groups.map((group) => (
+              <a
+                key={group.name}
+                href={`#${group.name}`}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {group.name}
+              </a>
+            ))}
+          </nav>
         </header>
       )}
 
-      {groups.map((group) => (
-        <section key={group.name} className="my-6">
-          <h2 className="text-2xl font-light my-4">{group.name}</h2>
-          <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-            {group.list
-              .filter((os) => !showLess || highlights.has(os.build))
-              .map((os, index) => (
-                <li key={index} className="list-none">
-                  <Link
-                    href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                    className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
-                  >
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-lg">{os.name}</h2>
-                      <div className="text-sm text-muted-foreground">
-                        {os.build}
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-          </ul>
-        </section>
-      ))}
+      {groups.map((group) => {
+        const majorGroups = groupByMajor(group.list);
+
+        return (
+          <section key={group.name} id={group.name} className="my-6 scroll-mt-20">
+            <h2 className="text-2xl font-light my-4">{group.name}</h2>
+
+            {showLess ? (
+              <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                {group.list
+                  .filter((os) => highlights.has(os.build))
+                  .map((os, index) => (
+                    <li key={index} className="list-none">
+                      <Link
+                        href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
+                        className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
+                      >
+                        <div className="flex justify-between items-center">
+                          <h2 className="text-lg">{os.name}</h2>
+                          <div className="text-sm text-muted-foreground">
+                            {os.build}
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <div className="space-y-6">
+                {majorGroups.map((majorGroup) => (
+                  <div key={majorGroup.major}>
+                    <h3 className="text-lg font-medium text-muted-foreground mb-3">
+                      {group.name === "iOS" ? "iOS" : group.name === "mac" ? "macOS" : "OS X"} {majorGroup.major}
+                    </h3>
+                    <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                      {majorGroup.versions.map((os, index) => (
+                        <li key={index} className="list-none">
+                          <Link
+                            href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
+                            className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
+                          >
+                            <div className="flex justify-between items-center">
+                              <h2 className="text-lg">{os.name}</h2>
+                              <div className="text-sm text-muted-foreground">
+                                {os.build}
+                              </div>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
