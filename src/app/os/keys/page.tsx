@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
 
-import { addBasePath } from "@/lib/env";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 

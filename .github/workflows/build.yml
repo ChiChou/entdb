@@ -22,6 +22,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Show dispatch context
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          echo "Triggered by repository_dispatch"
+          echo "event_type=${{ github.event.action }}"
+          echo "source_repo=${{ github.event.client_payload.source_repo }}"
+          echo "source_sha=${{ github.event.client_payload.source_sha }}"
+          echo "source_ref=${{ github.event.client_payload.source_ref }}"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -67,7 +76,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'repository_dispatch'
 
     steps:
       - name: Deploy to GitHub Pages

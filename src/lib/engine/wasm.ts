@@ -22,8 +22,8 @@ let dbReady = false;
 async function loadSQLite(): Promise<SQLite3API> {
   if (sqlite3Module) return sqlite3Module;
 
-  const module = await import("@sqlite.org/sqlite-wasm");
-  sqlite3Module = module.default || module;
+  const sqliteModule = await import("@sqlite.org/sqlite-wasm");
+  sqlite3Module = (sqliteModule.default || sqliteModule) as unknown as SQLite3API;
   return sqlite3Module;
 }
 
