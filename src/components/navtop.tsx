@@ -34,7 +34,7 @@ function ThemeToggle() {
 
 export function NavTop() {
   return (
-    <header className="flex flex-row justify-between items-center px-4 md:px-8 py-4 w-full border-b border-border bg-background text-foreground">
+    <header className="flex flex-row justify-between items-center px-4 md:px-8 h-14 w-full border-b border-border bg-background text-foreground">
       <h1 className="text-2xl font-bold">
         <Link href="/" className="hover:text-muted-foreground">
           entdb

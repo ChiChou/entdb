@@ -46,8 +46,8 @@ export default function Files() {
   }, [isFiltering]);
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+    <div className="flex flex-col h-full">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 shrink-0">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -103,29 +103,31 @@ export default function Files() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-2 py-1">
-              <div className="h-4 w-4 bg-muted rounded animate-pulse" />
-              <div
-                className="h-5 bg-muted rounded animate-pulse"
-                style={{ width: `${120 + Math.random() * 200}px` }}
-              />
-            </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {files.length === 0 ? (
-            <p>No paths found for this OS version.</p>
-          ) : (
-            <p>No paths match &quot;{keyword}&quot;</p>
-          )}
-        </div>
-      ) : (
-        <FileSystem os={os} list={filtered} expandAll={expandAll} />
-      )}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2 py-1">
+                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+                <div
+                  className="h-5 bg-muted rounded animate-pulse"
+                  style={{ width: `${120 + Math.random() * 200}px` }}
+                />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {files.length === 0 ? (
+              <p>No paths found for this OS version.</p>
+            ) : (
+              <p>No paths match &quot;{keyword}&quot;</p>
+            )}
+          </div>
+        ) : (
+          <FileSystem os={os} list={filtered} expandAll={expandAll} />
+        )}
+      </div>
     </div>
   );
 }

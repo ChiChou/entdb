@@ -38,50 +38,48 @@ export default function OSDetailLayout({
   }, [os]);
 
   return (
-    <div className="p-4 md:p-8" suppressHydrationWarning>
-      <header className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href={addBasePath("/")}>Home</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <span className="text-muted-foreground">
-                    {os?.split("/")[0]}
-                  </span>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-            <VersionSwitcher currentOs={os} />
-          </div>
-
-          <nav className="flex items-center gap-4 text-sm sm:ml-auto">
-            <Link
-              href={`/os/keys?os=${os}`}
-              className={currentPage === "keys" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
-            >
-              Entitlement Keys
-            </Link>
-            <Link
-              href={`/os/files?os=${os}`}
-              className={currentPage === "files" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
-            >
-              Browse Files
-            </Link>
-            {currentPage === "find" && (
-              <span className="font-medium">Search Results</span>
-            )}
-            {currentPage === "bin" && (
-              <span className="font-medium">Binary Detail</span>
-            )}
-          </nav>
+    <div className="flex flex-col h-[calc(100vh-56px)] p-4 md:p-6" suppressHydrationWarning>
+      <header className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 shrink-0">
+        <div className="flex items-center gap-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href={addBasePath("/")}>Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <span className="text-muted-foreground">
+                  {os?.split("/")[0]}
+                </span>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <VersionSwitcher currentOs={os} />
         </div>
+
+        <nav className="flex items-center gap-4 text-sm sm:ml-auto">
+          <Link
+            href={`/os/keys?os=${os}`}
+            className={currentPage === "keys" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
+          >
+            Entitlement Keys
+          </Link>
+          <Link
+            href={`/os/files?os=${os}`}
+            className={currentPage === "files" ? "font-medium" : "text-muted-foreground hover:text-foreground"}
+          >
+            Browse Files
+          </Link>
+          {currentPage === "find" && (
+            <span className="font-medium">Search Results</span>
+          )}
+          {currentPage === "bin" && (
+            <span className="font-medium">Binary Detail</span>
+          )}
+        </nav>
       </header>
 
-      <div>{children}</div>
+      <div className="flex-1 min-h-0">{children}</div>
     </div>
   );
 }
