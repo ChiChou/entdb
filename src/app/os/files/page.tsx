@@ -18,6 +18,7 @@ export default function Files() {
   const [loading, setLoading] = useState(true);
   const [files, setFiles] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
+  const [expandAll, setExpandAll] = useState<boolean | null>(null);
 
   const [debouncedKeyword] = useDebounce(keyword, 200);
 
@@ -38,6 +39,11 @@ export default function Files() {
   );
 
   const isFiltering = debouncedKeyword.length > 0;
+
+  // Reset expandAll when filter changes
+  useEffect(() => {
+    setExpandAll(isFiltering ? true : null);
+  }, [isFiltering]);
 
   return (
     <div>
@@ -62,17 +68,39 @@ export default function Files() {
             </Button>
           )}
         </div>
-        {!loading && (
-          <div className="text-sm text-muted-foreground whitespace-nowrap">
-            {isFiltering ? (
-              <>
-                {filtered.length} of {files.length} paths
-              </>
-            ) : (
-              <>{files.length} paths</>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {!loading && files.length > 0 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpandAll(true)}
+                className="h-8 px-2 text-xs"
+              >
+                Expand All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpandAll(false)}
+                className="h-8 px-2 text-xs"
+              >
+                Collapse All
+              </Button>
+            </div>
+          )}
+          {!loading && (
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
+              {isFiltering ? (
+                <>
+                  {filtered.length} of {files.length} paths
+                </>
+              ) : (
+                <>{files.length} paths</>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -96,7 +124,7 @@ export default function Files() {
           )}
         </div>
       ) : (
-        <FileSystem os={os} list={filtered} expandAll={isFiltering} />
+        <FileSystem os={os} list={filtered} expandAll={expandAll} />
       )}
     </div>
   );

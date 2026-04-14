@@ -4,13 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
-import {
-  Search,
-  X,
-  ChevronRight,
-  ChevronDown,
-  ChevronsUpDown,
-} from "lucide-react";
+import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -104,8 +98,8 @@ function KeyGroup({
     }
   }, [forceOpen]);
 
-  // Single standalone key - just show it inline
-  if (keys.length === 1 && keys[0] === prefix) {
+  // Single key in group - just show it inline without collapsible wrapper
+  if (keys.length === 1) {
     return (
       <div className="py-1">
         <KeyBadge keyName={keys[0]} prefix="" os={os} />

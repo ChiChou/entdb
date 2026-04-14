@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -63,7 +63,7 @@ function Tree({
   item: TreeWithFullPath;
   os: string;
   depth: number;
-  expandAll: boolean;
+  expandAll: boolean | null;
 }) {
   const entries = Object.entries(item);
   const files = entries.filter(([, v]) => typeof v === "string");
@@ -110,12 +110,18 @@ function TreeFolder({
   item: TreeWithFullPath;
   os: string;
   depth: number;
-  expandAll: boolean;
+  expandAll: boolean | null;
 }) {
-  const [open, setOpen] = useState(expandAll || depth < 1);
+  const [open, setOpen] = useState(expandAll === true || (expandAll === null && depth < 1));
   const itemCount = countItems(item);
   const maxDepth = getMaxDepth(item);
   const isShallow = maxDepth === 0;
+
+  useEffect(() => {
+    if (expandAll !== null) {
+      setOpen(expandAll);
+    }
+  }, [expandAll]);
 
   return (
     <li>
@@ -158,11 +164,11 @@ function TreeFolder({
 export default function FileSystem({
   list,
   os,
-  expandAll = false,
+  expandAll = null,
 }: {
   list: string[];
   os: string;
-  expandAll?: boolean;
+  expandAll?: boolean | null;
 }) {
   const tree = filesToTree(list);
   return (
