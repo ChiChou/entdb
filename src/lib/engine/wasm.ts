@@ -29,6 +29,9 @@ let sqlite3Module: SQLite3API | null = null;
 let dbInstance: SQLite3Database | null = null;
 let dbReady = false;
 
+const RANGE_CHUNK_SIZE = 8 * 1024 * 1024;
+const RANGE_CONCURRENCY = 6;
+
 async function loadSQLite(): Promise<SQLite3API> {
   if (sqlite3Module) return sqlite3Module;
 
@@ -54,19 +57,70 @@ export async function checkWASMSupport(): Promise<boolean> {
   }
 }
 
+async function fetchRangeChunk(
+  url: string,
+  start: number,
+  end: number
+): Promise<Uint8Array> {
+  const res = await fetch(url, {
+    headers: {
+      Range: `bytes=${start}-${end}`,
+    },
+  });
+
+  if (res.status !== 206) {
+    throw new Error(`Range request not honored: ${res.status}`);
+  }
+
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function fetchDatabaseBytes(url: string): Promise<Uint8Array> {
+  const head = await fetch(url, { method: "HEAD" });
+  if (!head.ok) {
+    throw new Error(
+      `Failed to fetch SQLite database: ${head.status} ${head.statusText}`
+    );
+  }
+
+  const contentLengthRaw = head.headers.get("content-length");
+  const contentLength = contentLengthRaw ? Number(contentLengthRaw) : Number.NaN;
+  if (!Number.isFinite(contentLength) || contentLength <= 0) {
+    throw new Error("Missing or invalid Content-Length header");
+  }
+
+  const out = new Uint8Array(contentLength);
+  const ranges: Array<[number, number]> = [];
+  for (let start = 0; start < contentLength; start += RANGE_CHUNK_SIZE) {
+    const end = Math.min(start + RANGE_CHUNK_SIZE - 1, contentLength - 1);
+    ranges.push([start, end]);
+  }
+
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(RANGE_CONCURRENCY, ranges.length || 1) },
+    async () => {
+      while (next < ranges.length) {
+        const idx = next;
+        next += 1;
+
+        const [start, end] = ranges[idx];
+        const chunk = await fetchRangeChunk(url, start, end);
+        out.set(chunk, start);
+      }
+    }
+  );
+
+  await Promise.all(workers);
+  return out;
+}
+
 async function getDB(): Promise<SQLite3Database> {
   if (dbReady && dbInstance) return dbInstance;
 
   const sqlite3 = await loadSQLite();
 
-  const response = await fetch(`${dataBaseURL()}/ent.db`);
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch SQLite database: ${response.status} ${response.statusText}`
-    );
-  }
-  const buffer = await response.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
+  const bytes = await fetchDatabaseBytes(`${dataBaseURL()}/ent.db`);
   const filename = "/ent.db";
 
   try {
