@@ -61,13 +61,13 @@ export class KVEngine implements Engine {
 
   async getPaths(build: string): Promise<string[]> {
     const os = await this.findOS(build);
-    const tag = `${os.version}_${build}`;
+    const tag = `${os.version}_${os.build}`;
     return fetchLines(`${this.#baseURL}/${tag}/paths.txt`);
   }
 
   async getBinaryXML(build: string, path: string): Promise<string> {
     const os = await this.findOS(build);
-    const tag = `${os.version}_${build}`;
+    const tag = `${os.version}_${os.build}`;
     const reader = await this.openKV(`${this.#baseURL}/${tag}/blobs`);
     const blob = await reader.get(path);
 
@@ -80,14 +80,14 @@ export class KVEngine implements Engine {
 
   async getKeys(build: string): Promise<string[]> {
     const os = await this.findOS(build);
-    const tag = `${os.version}_${build}`;
+    const tag = `${os.version}_${os.build}`;
     const reader = await this.openKV(`${this.#baseURL}/${tag}/keys`);
     return [...reader.keys()];
   }
 
   async getPathsForKey(build: string, key: string): Promise<string[]> {
     const os = await this.findOS(build);
-    const tag = `${os.version}_${build}`;
+    const tag = `${os.version}_${os.build}`;
     const reader = await this.openKV(`${this.#baseURL}/${tag}/keys`);
     const lines = await reader.get(key);
     return lines.split("\n").filter(Boolean);
@@ -99,7 +99,10 @@ export class KVEngine implements Engine {
     if (!this.#osCache) {
       this.#osCache = await this.listOS();
     }
-    const os = this.#osCache.find((o) => o.build === build);
+    // Handle both "23E254" and "26.4.1_23E254" formats
+    const os = this.#osCache.find(
+      (o) => o.build === build || `${o.version}_${o.build}` === build
+    );
     if (!os) throw new Error(`OS not found for build: ${build}`);
     return os;
   }
@@ -107,7 +110,11 @@ export class KVEngine implements Engine {
   private async openKV(baseURL: string): Promise<KVStore> {
     const recordsURL = baseURL + ".index.json";
     const blobsURL = baseURL + ".txt";
-    const records = await fetch(recordsURL).then((r) => r.json());
+    const raw = await fetch(recordsURL).then((r) => r.json());
+    // Handle both array format [key, offset, length] and object format {key, offset, length}
+    const records: KVRecord[] = raw.map((r: [string, number, number] | KVRecord) =>
+      Array.isArray(r) ? { key: r[0], offset: r[1], length: r[2] } : r
+    );
     return new KVStore(records, blobsURL);
   }
 }
