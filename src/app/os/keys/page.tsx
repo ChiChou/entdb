@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
-import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Search,
+  X,
+  ChevronRight,
+  ChevronDown,
+  ChevronsUpDown,
+} from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -62,7 +68,7 @@ function KeyBadge({
   return (
     <Link
       href={`/os/find?key=${encodeURIComponent(keyName)}&os=${os}`}
-      className="inline-flex items-baseline px-2 py-1 bg-muted hover:bg-accent rounded text-sm font-mono transition-colors group"
+      className="inline-block px-2 py-1 bg-muted hover:bg-accent rounded text-sm font-mono transition-colors group"
       title={keyName}
     >
       {suffix ? (
@@ -83,14 +89,20 @@ function KeyGroup({
   prefix,
   keys,
   os,
-  defaultOpen,
+  forceOpen,
 }: {
   prefix: string;
   keys: string[];
   os: string;
-  defaultOpen: boolean;
+  forceOpen: boolean | null;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(forceOpen ?? keys.length <= 8);
+
+  useEffect(() => {
+    if (forceOpen !== null) {
+      setOpen(forceOpen);
+    }
+  }, [forceOpen]);
 
   // Single standalone key - just show it inline
   if (keys.length === 1 && keys[0] === prefix) {
@@ -120,7 +132,7 @@ function KeyGroup({
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="flex flex-wrap gap-1.5 pl-6 pt-1.5 pb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 pl-6 pt-1.5 pb-2">
           {keys.map((key) => (
             <KeyBadge key={key} keyName={key} prefix={prefix} os={os} />
           ))}
@@ -138,6 +150,7 @@ export default function Keys() {
   const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
+  const [forceOpen, setForceOpen] = useState<boolean | null>(null);
 
   const [debouncedKeyword] = useDebounce(keyword, 200);
 
@@ -168,6 +181,17 @@ export default function Keys() {
   );
 
   const isFiltering = debouncedKeyword.length > 0;
+  const hasGroups = sortedPrefixes.some(
+    (p) => grouped[p].length > 1 || grouped[p][0] !== p
+  );
+
+  const handleExpandAll = useCallback(() => setForceOpen(true), []);
+  const handleCollapseAll = useCallback(() => setForceOpen(false), []);
+
+  // Reset forceOpen when filter changes
+  useEffect(() => {
+    setForceOpen(isFiltering ? true : null);
+  }, [isFiltering]);
 
   return (
     <div>
@@ -192,37 +216,75 @@ export default function Keys() {
             </Button>
           )}
         </div>
-        {!loading && (
-          <div className="text-sm text-muted-foreground whitespace-nowrap">
-            {isFiltering ? (
-              <>
-                {filtered.length} of {keys.length} keys
-              </>
-            ) : (
-              <>{keys.length} entitlement keys</>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {!loading && hasGroups && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExpandAll}
+                className="h-8 px-2 text-xs"
+              >
+                Expand All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCollapseAll}
+                className="h-8 px-2 text-xs"
+              >
+                Collapse All
+              </Button>
+            </div>
+          )}
+          {!loading && (
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
+              {isFiltering ? (
+                <>
+                  {filtered.length} of {keys.length} keys
+                </>
+              ) : (
+                <>{keys.length} entitlement keys</>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="space-y-2">
-              <div
-                className="h-6 bg-muted rounded animate-pulse"
-                style={{ width: `${20 + Math.random() * 30}%` }}
-              />
-              <div className="flex flex-wrap gap-1.5 pl-6">
-                {Array.from({ length: 3 + Math.floor(Math.random() * 4) }).map(
-                  (_, i) => (
-                    <div
-                      key={i}
-                      className="h-7 bg-muted rounded animate-pulse"
-                      style={{ width: `${80 + Math.random() * 120}px` }}
-                    />
-                  )
-                )}
+        <div className="space-y-4">
+          {[
+            { prefix: 180, items: [140, 160, 120] },
+            { prefix: 220, items: [180, 140, 200, 160] },
+            { prefix: 160, items: [120, 180] },
+            { prefix: 200, items: [160, 140, 180, 120, 200] },
+            { prefix: 140, items: [100, 140, 120] },
+            { prefix: 240, items: [180, 160, 200, 140] },
+          ].map((group, index) => (
+            <div
+              key={index}
+              className="space-y-2"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+                <div
+                  className="h-5 bg-muted rounded animate-pulse"
+                  style={{ width: group.prefix }}
+                />
+                <div className="h-4 w-8 bg-muted rounded-full animate-pulse ml-1" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 pl-6">
+                {group.items.map((width, i) => (
+                  <div
+                    key={i}
+                    className="h-8 bg-muted rounded animate-pulse"
+                    style={{
+                      width,
+                      animationDelay: `${index * 100 + i * 50}ms`,
+                    }}
+                  />
+                ))}
               </div>
             </div>
           ))}
@@ -243,7 +305,7 @@ export default function Keys() {
               prefix={prefix}
               keys={grouped[prefix]}
               os={os}
-              defaultOpen={isFiltering || grouped[prefix].length <= 8}
+              forceOpen={forceOpen}
             />
           ))}
         </div>

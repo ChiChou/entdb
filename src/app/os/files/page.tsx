@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { useDebounce } from "use-debounce";
+import { Search, X } from "lucide-react";
 
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import FileSystem from "@/components/filesystem";
 import { createEngine } from "@/lib/engine";
 
@@ -13,6 +17,9 @@ export default function Files() {
 
   const [loading, setLoading] = useState(true);
   const [files, setFiles] = useState<string[]>([]);
+  const [keyword, setKeyword] = useState("");
+
+  const [debouncedKeyword] = useDebounce(keyword, 200);
 
   useEffect(() => {
     setLoading(true);
@@ -22,36 +29,74 @@ export default function Files() {
       .finally(() => setLoading(false));
   }, [group, build]);
 
+  const filtered = useMemo(
+    () =>
+      files.filter((path) =>
+        path.toLowerCase().includes(debouncedKeyword.toLowerCase())
+      ),
+    [debouncedKeyword, files]
+  );
+
+  const isFiltering = debouncedKeyword.length > 0;
+
   return (
-    <div className="text-left">
+    <div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Filter paths..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {keyword && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setKeyword("")}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {!loading && (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {isFiltering ? (
+              <>
+                {filtered.length} of {files.length} paths
+              </>
+            ) : (
+              <>{files.length} paths</>
+            )}
+          </div>
+        )}
+      </div>
+
       {loading ? (
         <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
-            <div className="h-4 bg-gray-300 rounded w-32 animate-pulse"></div>
-          </div>
-          <div className="ml-6 space-y-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
-              <div className="h-4 bg-gray-300 rounded w-24 animate-pulse"></div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2 py-1">
+              <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+              <div
+                className="h-5 bg-muted rounded animate-pulse"
+                style={{ width: `${120 + Math.random() * 200}px` }}
+              />
             </div>
-            <div className="ml-6 space-y-1">
-              <div className="h-3 bg-gray-300 rounded w-20 animate-pulse"></div>
-              <div className="h-3 bg-gray-300 rounded w-16 animate-pulse"></div>
-              <div className="h-3 bg-gray-300 rounded w-28 animate-pulse"></div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
-              <div className="h-4 bg-gray-300 rounded w-20 animate-pulse"></div>
-            </div>
-            <div className="ml-6 space-y-1">
-              <div className="h-3 bg-gray-300 rounded w-24 animate-pulse"></div>
-              <div className="h-3 bg-gray-300 rounded w-18 animate-pulse"></div>
-            </div>
-          </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          {files.length === 0 ? (
+            <p>No paths found for this OS version.</p>
+          ) : (
+            <p>No paths match &quot;{keyword}&quot;</p>
+          )}
         </div>
       ) : (
-        <FileSystem os={os} list={files} />
+        <FileSystem os={os} list={filtered} expandAll={isFiltering} />
       )}
     </div>
   );
