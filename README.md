@@ -13,11 +13,7 @@ Web frontend for the Entitlement Database — browse iOS and macOS entitlements 
 
 Built as a static Next.js site deployed to GitHub Pages.
 
-Uses a dual-engine approach for data queries:
-
-1. **WASM Engine** (primary) — Loads `ent.db` SQLite database into the browser via `@sqlite.org/sqlite-wasm`. Supports arbitrary SQL queries for rich data views and cross-version analysis.
-
-2. **KV Engine** (fallback) — Uses pre-built static KV files with HTTP Range requests when WebAssembly is not available.
+It uses pre-built static KV format (on top of JSON) with HTTP Range requests.
 
 ## Related Repositories
 
