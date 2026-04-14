@@ -38,7 +38,7 @@ export default function OSDetailLayout({
   }, [os]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] p-4 md:p-6" suppressHydrationWarning>
+    <div className="flex flex-col flex-1 min-h-0 p-4 md:p-6" suppressHydrationWarning>
       <header className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 shrink-0">
         <div className="flex items-center gap-4">
           <Breadcrumb>
