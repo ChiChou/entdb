@@ -185,11 +185,13 @@ export default function BinaryDetail() {
                             disabled={isCurrent}
                             className={`flex-1 text-left ${
                               isCurrent
-                                ? "cursor-default"
+                                ? ""
                                 : "text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            {h.os.version}
+                            <span className={isCurrent ? "" : "cursor-pointer"}>
+                              {h.os.version}
+                            </span>
                             {isCurrent && (
                               <span className="ml-1 text-xs opacity-70">
                                 (current)
