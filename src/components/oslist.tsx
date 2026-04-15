@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 
 import { Group, OS } from "@/lib/types";
-import { addBasePath } from "@/lib/env";
+import { withBase, dataURL } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
 
 function responseOK(r: Response) {
@@ -108,14 +108,14 @@ export default function OSList() {
   useEffect(() => {
     setLoading(true);
 
-    fetch(addBasePath("/data/groups.json"))
+    fetch(`${dataURL}/groups.json`)
       .then(responseOK)
       .then((r) => r.json() as Promise<string[]>)
       .then(async (groupList: string[]) =>
         Promise.all(
           groupList.map(async (group) => {
             const response = await fetch(
-              addBasePath(`/data/${group}/list.json`),
+              `${dataURL}/${group}/list.json`,
             ).then(responseOK);
 
             const data = await response.json();

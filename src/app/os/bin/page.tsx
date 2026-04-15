@@ -15,7 +15,7 @@ import { CopyButton } from "@/components/copy-button";
 import { DownloadButton } from "@/components/download-button";
 import { DiffViewer } from "@/components/diff-viewer";
 
-import { addBasePath } from "@/lib/env";
+import { withBase } from "@/lib/env";
 import { createEngine } from "@/lib/engine";
 import type { PathHistory } from "@/lib/engine/types";
 import { normalizePlist } from "@/lib/plist";
@@ -291,7 +291,7 @@ export default function BinaryDetail() {
                           ],
                           properties: {
                             className: ["text-blue-600", "dark:text-blue-300", "hover:underline"],
-                            href: addBasePath(
+                            href: withBase(
                               `/os/find?key=${encodeURIComponent(
                                 node.value as string,
                               )}&os=${encodeURIComponent(os!)}`,

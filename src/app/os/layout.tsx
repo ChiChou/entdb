@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { VersionSwitcher } from "@/components/version-switcher";
 
-import { addBasePath } from "@/lib/env";
+import { withBase } from "@/lib/env";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
@@ -46,7 +46,7 @@ export default function OSDetailLayout({
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href={addBasePath("/")}>Home</BreadcrumbLink>
+                <BreadcrumbLink href={withBase("/")}>Home</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>

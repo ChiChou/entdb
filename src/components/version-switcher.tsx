@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronDown, Check } from "lucide-react";
 
 import type { OS } from "@/lib/types";
-import { addBasePath, basePath } from "@/lib/env";
+import { withBase, basePath, dataURL } from "@/lib/env";
 
 function compareVersion(a: string, b: string) {
   const l1 = a.split(".").map(Number);
@@ -42,7 +42,7 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
   useEffect(() => {
     if (!group) return;
 
-    fetch(addBasePath(`/data/${group}/list.json`))
+    fetch(`${dataURL}/${group}/list.json`)
       .then((r) => r.json())
       .then((list: OS[]) => {
         list.sort((a, b) => compareVersion(a.version, b.version));

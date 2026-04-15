@@ -1,6 +1,6 @@
 import type { Engine, PathHistory } from "./types";
 import type { OS } from "@/lib/types";
-import { dataBaseURL } from "@/lib/env";
+import { dataURL } from "@/lib/env";
 import { fetchText, fetchLines } from "@/lib/client";
 
 interface KVRecord {
@@ -55,7 +55,7 @@ export class KVEngine implements Engine {
   #baseURL: string;
 
   constructor(group: string) {
-    this.#baseURL = `${dataBaseURL()}/${group}`;
+    this.#baseURL = `${dataURL}/${group}`;
   }
 
   async listOS(): Promise<OS[]> {

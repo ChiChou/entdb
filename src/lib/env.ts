@@ -1,11 +1,5 @@
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+export const dataURL = process.env.NEXT_PUBLIC_DATA_URL || `${basePath}/data`;
 
-export function addBasePath(path: string) {
-  let prefixed = path;
-  if (!prefixed.startsWith("/")) prefixed = `/${prefixed}`;
-  return basePath + prefixed;
-}
-
-export function dataBaseURL(): string {
-  return addBasePath("/data");
-}
+export const withBase = (path: string) =>
+  basePath + (path.startsWith("/") ? path : `/${path}`);

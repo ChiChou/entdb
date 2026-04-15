@@ -1,6 +1,6 @@
 "use client";
 
-import { addBasePath } from "@/lib/env";
+import { withBase } from "@/lib/env";
 import { useSearchParams, redirect } from "next/navigation";
 
 export default function OSDetail() {
@@ -11,5 +11,5 @@ export default function OSDetail() {
     return <div className="p-8">Invalid OS</div>;
   }
 
-  redirect(addBasePath(`/os/keys?os=${os}`));
+  redirect(withBase(`/os/keys?os=${os}`));
 }

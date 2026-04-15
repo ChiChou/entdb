@@ -4,15 +4,16 @@ on:
   push:
     branches: [main]
 
-  repository_dispatch:
-    types: [data-updated]
-
   workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+env:
+  DATA_REPO_OWNER: ChiChou
+  DATA_REPO_NAME: entdb-data
 
 jobs:
   build:
@@ -23,15 +24,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Show dispatch context
-        if: github.event_name == 'repository_dispatch'
-        run: |
-          echo "Triggered by repository_dispatch"
-          echo "event_type=${{ github.event.action }}"
-          echo "source_repo=${{ github.event.client_payload.source_repo }}"
-          echo "source_sha=${{ github.event.client_payload.source_sha }}"
-          echo "source_ref=${{ github.event.client_payload.source_ref }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -53,20 +45,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path || '' }}
-
-      - name: Download latest data release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          release_json=$(curl -fsSL \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/ChiChou/entdb-data/releases/latest)
-
-          data_url=$(echo "$release_json" | jq -er '.assets[] | select(.name == "data.tar.gz") | .browser_download_url')
-          mkdir -p out/data
-          curl -fL "$data_url" -o data.tar.gz
-          tar -xzf data.tar.gz -C out/data
+          NEXT_PUBLIC_DATA_URL: https://${{ env.DATA_REPO_OWNER }}.github.io/${{ env.DATA_REPO_NAME }}
 
       - name: Upload artifact
         if: steps.configure-pages.outcome == 'success'
