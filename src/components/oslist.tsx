@@ -76,11 +76,30 @@ export default function OSList() {
             bucket.get(key)!.push(item);
           }
         });
-        bucket.values().forEach((items) => {
-          items.sort((a, b) => compareVersion(b.version, a.version));
+        // For iOS and mac, determine the latest 2 major versions
+      const isIOSOrMac = group.name === "iOS" || group.name === "mac";
+      let latestTwoMajors = new Set<string>();
+      if (isIOSOrMac) {
+        const sortedMajors = Array.from(bucket.keys())
+          .map(Number)
+          .sort((a, b) => b - a)
+          .slice(0, 2)
+          .map(String);
+        latestTwoMajors = new Set(sortedMajors);
+      }
+
+      bucket.forEach((items, major) => {
+        items.sort((a, b) => compareVersion(b.version, a.version));
+
+        if (isIOSOrMac && latestTwoMajors.has(major)) {
+          // For latest 2 majors of iOS/macOS, show all minor versions
+          items.forEach((item) => set.add(item.build));
+        } else {
+          // For older majors or other OS types, show only the latest
           const [first] = items;
           set.add(first?.build);
-        });
+        }
+      });
       }
     }
     setHighlights(set);
