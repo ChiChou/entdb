@@ -126,9 +126,7 @@ export default function BinaryDetail() {
 
   const switchVersion = (versionTag: string) => {
     router.push(
-      addBasePath(
-        `/os/bin?os=${encodeURIComponent(group + "/" + versionTag)}&path=${encodeURIComponent(path!)}`
-      )
+      `/os/bin?os=${encodeURIComponent(group + "/" + versionTag)}&path=${encodeURIComponent(path!)}`
     );
   };
 

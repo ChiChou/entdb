@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronDown, Check } from "lucide-react";
 
 import type { OS } from "@/lib/types";
-import { addBasePath } from "@/lib/env";
+import { addBasePath, basePath } from "@/lib/env";
 
 function compareVersion(a: string, b: string) {
   const l1 = a.split(".").map(Number);
@@ -64,7 +64,9 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set("os", `${group}/${newTag}`);
 
-    router.push(`${pathname}?${newParams.toString()}`);
+    // Strip basePath from pathname since router.push adds it automatically
+    const pathWithoutBase = pathname.startsWith(basePath) ? pathname.slice(basePath.length) : pathname;
+    router.push(`${pathWithoutBase}?${newParams.toString()}`);
     setOpen(false);
     setFilter("");
   };
