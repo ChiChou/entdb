@@ -1,151 +1,14 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-function useColumnCount() {
-  const [cols, setCols] = useState(3);
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
-    const update = () => {
-      const w = window.innerWidth;
-      setCols(w < 640 ? 1 : w < 1024 ? 2 : 3);
-    };
-    const debouncedUpdate = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(update, 100);
-    };
-    update();
-    window.addEventListener("resize", debouncedUpdate);
-    return () => {
-      clearTimeout(timeout);
-      window.removeEventListener("resize", debouncedUpdate);
-    };
-  }, []);
-  return cols;
-}
-
+import { Skeleton } from "@/components/ui/skeleton";
 import { createEngine } from "@/lib/engine";
-
-interface GroupedKeys {
-  [prefix: string]: string[];
-}
-
-function groupKeysByPrefix(keys: string[]): GroupedKeys {
-  const groups: GroupedKeys = {};
-
-  for (const key of keys) {
-    const parts = key.split(".");
-    let prefix: string;
-    if (parts.length >= 3 && parts[0] === "com" && parts[1] === "apple") {
-      prefix = `${parts[0]}.${parts[1]}.${parts[2]}`;
-    } else if (parts.length >= 2) {
-      prefix = `${parts[0]}.${parts[1]}`;
-    } else {
-      prefix = key;
-    }
-
-    if (!groups[prefix]) {
-      groups[prefix] = [];
-    }
-    groups[prefix].push(key);
-  }
-
-  return groups;
-}
-
-const KeyBadge = memo(function KeyBadge({
-  keyName,
-  prefix,
-  os,
-}: {
-  keyName: string;
-  prefix: string;
-  os: string;
-}) {
-  const suffix = keyName.startsWith(prefix + ".")
-    ? keyName.slice(prefix.length)
-    : keyName === prefix
-      ? ""
-      : keyName;
-
-  return (
-    <Link
-      href={`/os/find?key=${encodeURIComponent(keyName)}&os=${os}`}
-      className="block py-1 font-mono text-muted-foreground hover:text-foreground transition-colors group truncate"
-      title={keyName}
-    >
-      {suffix ? (
-        <>
-          <span className="text-muted-foreground/60 group-hover:text-muted-foreground text-sm">
-            {prefix}
-          </span>
-          <span className="text-foreground/80 group-hover:text-foreground">{suffix}</span>
-        </>
-      ) : (
-        <span>{keyName}</span>
-      )}
-    </Link>
-  );
-});
-
-const KeyGroup = memo(function KeyGroup({
-  prefix,
-  keys,
-  os,
-  cols,
-  isOpen,
-  onToggle,
-  isFiltering,
-}: {
-  prefix: string;
-  keys: string[];
-  os: string;
-  cols: number;
-  isOpen: boolean;
-  onToggle: () => void;
-  isFiltering: boolean;
-}) {
-  const autoExpand = keys.length <= 8 || isFiltering;
-  const expanded = isOpen || autoExpand;
-
-  return (
-    <div className="mb-2">
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 px-2 py-2 hover:bg-accent rounded transition-colors text-left w-full"
-      >
-        {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        )}
-        <span className="font-mono text-sm text-muted-foreground">
-          {prefix}
-          <span className="text-foreground font-medium">.*</span>
-        </span>
-        <span className="text-xs text-muted-foreground bg-background border px-1.5 py-0.5 rounded-full">
-          {keys.length}
-        </span>
-      </button>
-      {expanded && (
-        <div
-          className="grid gap-x-6 gap-y-1 pl-8 pb-3 pr-2"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-        >
-          {keys.map((key) => (
-            <KeyBadge key={key} keyName={key} prefix={prefix} os={os} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-});
 
 export default function Keys() {
   const params = useSearchParams();
@@ -156,9 +19,6 @@ export default function Keys() {
   const [keys, setKeys] = useState<string[]>([]);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
-
-  const cols = useColumnCount();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -187,50 +47,7 @@ export default function Keys() {
     [debouncedKeyword, keys]
   );
 
-  const grouped = useMemo(() => groupKeysByPrefix(filtered), [filtered]);
-  const sortedPrefixes = useMemo(
-    () => Object.keys(grouped).sort((a, b) => a.localeCompare(b)),
-    [grouped]
-  );
-
   const isFiltering = debouncedKeyword.length > 0;
-
-  const toggleGroup = useCallback((prefix: string) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(prefix)) {
-        next.delete(prefix);
-      } else {
-        next.add(prefix);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleExpandAll = useCallback(() => {
-    setOpenGroups(new Set(sortedPrefixes));
-  }, [sortedPrefixes]);
-
-  const handleCollapseAll = useCallback(() => {
-    setOpenGroups(new Set());
-  }, []);
-
-  // Separate single keys from groups
-  const { groups, singles } = useMemo(() => {
-    const groups: { prefix: string; keys: string[] }[] = [];
-    const singles: string[] = [];
-
-    for (const prefix of sortedPrefixes) {
-      const prefixKeys = grouped[prefix];
-      if (prefixKeys.length === 1 && prefixKeys[0] === prefix) {
-        singles.push(prefixKeys[0]);
-      } else {
-        groups.push({ prefix, keys: prefixKeys });
-      }
-    }
-
-    return { groups, singles };
-  }, [sortedPrefixes, grouped]);
 
   return (
     <div className="flex flex-col h-full">
@@ -255,80 +72,27 @@ export default function Keys() {
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {!loading && sortedPrefixes.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExpandAll}
-                className="h-8 px-2 text-xs"
-              >
-                Expand All
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCollapseAll}
-                className="h-8 px-2 text-xs"
-              >
-                Collapse All
-              </Button>
-            </div>
-          )}
-          {!loading && (
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {isFiltering ? (
-                <>
-                  {filtered.length} of {keys.length} keys
-                </>
-              ) : (
-                <>{keys.length} entitlement keys</>
-              )}
-            </div>
-          )}
-        </div>
+        {!loading && (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {isFiltering ? (
+              <>
+                {filtered.length} of {keys.length} keys
+              </>
+            ) : (
+              <>{keys.length} entitlement keys</>
+            )}
+          </div>
+        )}
       </div>
 
       {loading ? (
-        <div className="space-y-4">
-          {[
-            { prefix: 180, items: [140, 160, 120] },
-            { prefix: 220, items: [180, 140, 200, 160] },
-            { prefix: 160, items: [120, 180] },
-            { prefix: 200, items: [160, 140, 180, 120, 200] },
-            { prefix: 140, items: [100, 140, 120] },
-            { prefix: 240, items: [180, 160, 200, 140] },
-          ].map((group, index) => (
-            <div
-              key={index}
-              className="space-y-2"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
-                <div
-                  className="h-5 bg-muted rounded animate-pulse"
-                  style={{ width: group.prefix }}
-                />
-                <div className="h-4 w-8 bg-muted rounded-full animate-pulse ml-1" />
-              </div>
-              <div
-                className="grid gap-1.5 pl-6"
-                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-              >
-                {group.items.map((width, i) => (
-                  <div
-                    key={i}
-                    className="h-8 bg-muted rounded animate-pulse"
-                    style={{
-                      width,
-                      animationDelay: `${index * 100 + i * 50}ms`,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className="h-7"
+              style={{ width: `${60 + Math.random() * 40}%` }}
+            />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -341,29 +105,18 @@ export default function Keys() {
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          {singles.length > 0 && (
-            <div
-              className="grid gap-x-6 gap-y-1 px-2 pb-4"
-              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-            >
-              {singles.map((key) => (
-                <KeyBadge key={key} keyName={key} prefix="" os={os} />
-              ))}
-            </div>
-          )}
-
-          {groups.map(({ prefix, keys: groupKeys }) => (
-            <KeyGroup
-              key={prefix}
-              prefix={prefix}
-              keys={groupKeys}
-              os={os}
-              cols={cols}
-              isOpen={openGroups.has(prefix)}
-              onToggle={() => toggleGroup(prefix)}
-              isFiltering={isFiltering}
-            />
-          ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
+            {filtered.map((key) => (
+              <Link
+                key={key}
+                href={`/os/find?key=${encodeURIComponent(key)}&os=${os}`}
+                className="block py-1 font-mono text-sm text-muted-foreground hover:text-foreground transition-colors truncate"
+                title={key}
+              >
+                {key}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>

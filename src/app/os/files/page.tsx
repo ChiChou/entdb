@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export default function Files() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 shrink-0">
+      <div className="flex items-center gap-2 mb-4 shrink-0">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -68,39 +68,40 @@ export default function Files() {
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {!loading && files.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setExpandAll(true)}
-                className="h-8 px-2 text-xs"
-              >
-                Expand All
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setExpandAll(false)}
-                className="h-8 px-2 text-xs"
-              >
-                Collapse All
-              </Button>
-            </div>
-          )}
-          {!loading && (
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {isFiltering ? (
-                <>
-                  {filtered.length} of {files.length} paths
-                </>
-              ) : (
-                <>{files.length} paths</>
-              )}
-            </div>
-          )}
-        </div>
+        {!loading && files.length > 0 && (
+          <div className="flex items-center border border-border rounded-md">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandAll(true)}
+              className="h-8 px-2 rounded-r-none"
+              title="Expand All"
+            >
+              <ChevronsUpDown className="h-4 w-4" />
+            </Button>
+            <div className="w-px h-4 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandAll(false)}
+              className="h-8 px-2 rounded-l-none"
+              title="Collapse All"
+            >
+              <ChevronsDownUp className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {!loading && (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {isFiltering ? (
+              <>
+                {filtered.length} of {files.length} paths
+              </>
+            ) : (
+              <>{files.length} paths</>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">

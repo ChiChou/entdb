@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Group, OS } from "@/lib/types";
-import { withBase, dataURL } from "@/lib/env";
+import { dataURL } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
 
 function responseOK(r: Response) {
@@ -53,10 +54,13 @@ function groupByMajor(list: OS[]): MajorGroup[] {
 }
 
 export default function OSList() {
-  const [showLess, setShowLess] = useState(true);
+  const searchParams = useSearchParams();
+  const showAll = searchParams.get("view") === "all";
+
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>([]);
   const [highlights, setHighlights] = useState<Set<string>>(new Set());
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const set: Set<string> = new Set();
@@ -76,30 +80,27 @@ export default function OSList() {
             bucket.get(key)!.push(item);
           }
         });
-        // For iOS and mac, determine the latest 2 major versions
-      const isIOSOrMac = group.name === "iOS" || group.name === "mac";
-      let latestTwoMajors = new Set<string>();
-      if (isIOSOrMac) {
-        const sortedMajors = Array.from(bucket.keys())
-          .map(Number)
-          .sort((a, b) => b - a)
-          .slice(0, 2)
-          .map(String);
-        latestTwoMajors = new Set(sortedMajors);
-      }
-
-      bucket.forEach((items, major) => {
-        items.sort((a, b) => compareVersion(b.version, a.version));
-
-        if (isIOSOrMac && latestTwoMajors.has(major)) {
-          // For latest 2 majors of iOS/macOS, show all minor versions
-          items.forEach((item) => set.add(item.build));
-        } else {
-          // For older majors or other OS types, show only the latest
-          const [first] = items;
-          set.add(first?.build);
+        const isIOSOrMac = group.name === "iOS" || group.name === "mac";
+        let latestTwoMajors = new Set<string>();
+        if (isIOSOrMac) {
+          const sortedMajors = Array.from(bucket.keys())
+            .map(Number)
+            .sort((a, b) => b - a)
+            .slice(0, 2)
+            .map(String);
+          latestTwoMajors = new Set(sortedMajors);
         }
-      });
+
+        bucket.forEach((items, major) => {
+          items.sort((a, b) => compareVersion(b.version, a.version));
+
+          if (isIOSOrMac && latestTwoMajors.has(major)) {
+            items.forEach((item) => set.add(item.build));
+          } else {
+            const [first] = items;
+            set.add(first?.build);
+          }
+        });
       }
     }
     setHighlights(set);
@@ -129,30 +130,39 @@ export default function OSList() {
       )
       .then((groups) => {
         setGroups(groups);
+        // Enable all platforms by default
+        setSelectedPlatforms(new Set(groups.map((g) => g.name)));
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const togglePlatform = (name: string) => {
+    setSelectedPlatforms((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        // Don't allow deselecting all
+        if (next.size > 1) next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  };
+
+  const filteredGroups = useMemo(() => {
+    return groups.filter((g) => selectedPlatforms.has(g.name));
+  }, [groups, selectedPlatforms]);
 
   return (
     <div>
       {loading && (
         <div className="space-y-6">
-          <div className="mb-4 flex items-center">
-            <Skeleton className="h-4 w-4 mr-2" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-
           {[1, 2, 3].map((group) => (
-            <section key={group} className="my-6">
-              <Skeleton className="h-8 w-32 my-4" />
-              <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-                  <div key={item} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <Skeleton className="h-6 w-24" />
-                      <Skeleton className="h-4 w-16" />
-                    </div>
-                  </div>
+            <section key={group} className="my-4">
+              <Skeleton className="h-6 w-24 mb-3" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((item) => (
+                  <Skeleton key={item} className="h-14" />
                 ))}
               </div>
             </section>
@@ -161,107 +171,93 @@ export default function OSList() {
       )}
 
       {!loading && groups.length === 0 && (
-        <div className="text-center">Failed to fetch OS list</div>
+        <div className="text-center py-12 text-muted-foreground">
+          Failed to fetch OS list
+        </div>
       )}
 
-      {!loading && (
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
-            <button
-              onClick={() => setShowLess(true)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                showLess
-                  ? "bg-background text-foreground shadow-sm font-medium"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Major Releases
-            </button>
-            <button
-              onClick={() => setShowLess(false)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                !showLess
-                  ? "bg-background text-foreground shadow-sm font-medium"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All Builds
-            </button>
-          </div>
-          <nav className="flex items-center gap-3 text-sm">
+      {!loading && groups.length > 0 && (
+        <>
+          {/* Platform filters */}
+          <div className="flex items-center gap-1 mb-6">
             {groups.map((group) => (
-              <a
+              <button
                 key={group.name}
-                href={`#${group.name}`}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => togglePlatform(group.name)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  selectedPlatforms.has(group.name)
+                    ? "bg-foreground text-background font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                }`}
               >
                 {group.name}
-              </a>
+              </button>
             ))}
-          </nav>
-        </header>
-      )}
+          </div>
 
-      {groups.map((group) => {
-        const majorGroups = groupByMajor(group.list);
+          {filteredGroups.map((group) => {
+            const majorGroups = groupByMajor(group.list);
 
-        return (
-          <section key={group.name} id={group.name} className="my-6 scroll-mt-20">
-            <h2 className="text-2xl font-light my-4">{group.name}</h2>
+            return (
+              <section key={group.name} id={group.name} className="mb-6">
+                <h2 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                  {group.name}
+                  <span className="flex-1 border-t border-border" />
+                </h2>
 
-            {showLess ? (
-              <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                {group.list
-                  .filter((os) => highlights.has(os.build))
-                  .map((os, index) => (
-                    <li key={index} className="list-none">
-                      <Link
-                        href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                        className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
-                      >
-                        <div className="flex justify-between items-start">
-                          <h2 className="text-lg font-medium">{group.name === "iOS" ? os.version : os.name}</h2>
-                          <div className="text-right space-y-1">
-                            {group.name !== "iOS" && <div className="text-sm font-medium">{os.version}</div>}
-                            <div className="text-xs text-muted-foreground font-mono">{os.build}</div>
-                          </div>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-              </ul>
-            ) : (
-              <div className="space-y-6">
-                {majorGroups.map((majorGroup) => (
-                  <div key={majorGroup.major}>
-                    <h3 className="text-lg font-medium text-muted-foreground mb-3">
-                      {group.name === "iOS" ? "iOS" : group.name === "mac" ? "macOS" : "OS X"} {majorGroup.major}
-                    </h3>
-                    <ul className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                      {majorGroup.versions.map((os, index) => (
+                {!showAll ? (
+                  <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {group.list
+                      .filter((os) => highlights.has(os.build))
+                      .map((os, index) => (
                         <li key={index} className="list-none">
                           <Link
                             href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                            className="block p-4 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
+                            className="block p-3 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
                           >
-                            <div className="flex justify-between items-start">
-                              <h2 className="text-lg font-medium">{group.name === "iOS" ? os.version : os.name}</h2>
-                              <div className="text-right space-y-1">
-                                {group.name !== "iOS" && <div className="text-sm font-medium">{os.version}</div>}
-                                <div className="text-xs text-muted-foreground font-mono">{os.build}</div>
-                              </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">{os.version}</span>
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {os.build}
+                              </span>
                             </div>
                           </Link>
                         </li>
                       ))}
-                    </ul>
+                  </ul>
+                ) : (
+                  <div className="space-y-4">
+                    {majorGroups.map((majorGroup) => (
+                      <div key={majorGroup.major}>
+                        <h3 className="text-xs font-medium text-muted-foreground mb-2">
+                          {group.name} {majorGroup.major}
+                        </h3>
+                        <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                          {majorGroup.versions.map((os, index) => (
+                            <li key={index} className="list-none">
+                              <Link
+                                href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
+                                className="block p-3 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span className="font-medium">{os.version}</span>
+                                  <span className="text-xs text-muted-foreground font-mono">
+                                    {os.build}
+                                  </span>
+                                </div>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
+                )}
+              </section>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

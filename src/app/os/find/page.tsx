@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { redirect, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -68,18 +68,14 @@ export default function FindByKey() {
   }, [isFiltering]);
 
   return (
-    <div>
-      <header className="mb-4">
-        <h1 className="text-foreground">
-          Binaries that have the following entitlement:
-        </h1>
-        <p>
-          <code className="text-sm break-all text-red-700 dark:text-red-400">{key}</code>
-        </p>
-      </header>
-
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
+    <div className="flex flex-col h-full">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4 shrink-0">
+        <div className="min-w-0 shrink-0">
+          <span className="text-sm text-muted-foreground">Binaries with </span>
+          <code className="text-sm break-all text-primary font-medium">{key}</code>
+        </div>
+        <div className="flex items-center gap-2 sm:ml-auto">
+        <div className="relative flex-1 sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
@@ -99,64 +95,68 @@ export default function FindByKey() {
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {!loading && paths.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setExpandAll(true)}
-                className="h-8 px-2 text-xs"
-              >
-                Expand All
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setExpandAll(false)}
-                className="h-8 px-2 text-xs"
-              >
-                Collapse All
-              </Button>
-            </div>
-          )}
-          {!loading && (
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {isFiltering ? (
-                <>
-                  {filtered.length} of {paths.length} paths
-                </>
-              ) : (
-                <>{paths.length} paths</>
-              )}
-            </div>
-          )}
+        {!loading && paths.length > 0 && (
+          <div className="flex items-center border border-border rounded-md">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandAll(true)}
+              className="h-8 px-2 rounded-r-none"
+              title="Expand All"
+            >
+              <ChevronsUpDown className="h-4 w-4" />
+            </Button>
+            <div className="w-px h-4 bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandAll(false)}
+              className="h-8 px-2 rounded-l-none"
+              title="Collapse All"
+            >
+              <ChevronsDownUp className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        {!loading && (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {isFiltering ? (
+              <>
+                {filtered.length} of {paths.length} paths
+              </>
+            ) : (
+              <>{paths.length} paths</>
+            )}
+          </div>
+        )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-2 py-1">
-              <div className="h-4 w-4 bg-muted rounded animate-pulse" />
-              <div
-                className="h-5 bg-muted rounded animate-pulse"
-                style={{ width: `${120 + Math.random() * 200}px` }}
-              />
-            </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {paths.length === 0 ? (
-            <p>No binaries found with this entitlement.</p>
-          ) : (
-            <p>No paths match &quot;{keyword}&quot;</p>
-          )}
-        </div>
-      ) : (
-        <FileSystem os={os} list={filtered} expandAll={expandAll} />
-      )}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2 py-1">
+                <div className="h-4 w-4 bg-muted rounded animate-pulse" />
+                <div
+                  className="h-5 bg-muted rounded animate-pulse"
+                  style={{ width: `${120 + Math.random() * 200}px` }}
+                />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {paths.length === 0 ? (
+              <p>No binaries found with this entitlement.</p>
+            ) : (
+              <p>No paths match &quot;{keyword}&quot;</p>
+            )}
+          </div>
+        ) : (
+          <FileSystem os={os} list={filtered} expandAll={expandAll} />
+        )}
+      </div>
     </div>
   );
 }
