@@ -11,10 +11,6 @@ permissions:
   pages: write
   id-token: write
 
-env:
-  DATA_REPO_OWNER: ChiChou
-  DATA_REPO_NAME: entdb-data
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,11 +21,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -39,13 +32,13 @@ jobs:
           static_site_generator: next
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build with Next.js
-        run: npm run build
+        run: bun run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path || '' }}
-          NEXT_PUBLIC_DATA_URL: https://${{ env.DATA_REPO_OWNER }}.github.io/${{ env.DATA_REPO_NAME }}
+          NEXT_PUBLIC_DATA_URL: https://codecolor.ist/entdb-data
 
       - name: Upload artifact
         if: steps.configure-pages.outcome == 'success'
