@@ -38,7 +38,7 @@ jobs:
         run: bun run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.configure-pages.outputs.base_path || '' }}
-          NEXT_PUBLIC_DATA_URL: https://codecolor.ist/entdb-data
+          NEXT_PUBLIC_DATA_URL: ${{ vars.DATA_PATH || '/entdb-data' }}
 
       - name: Upload artifact
         if: steps.configure-pages.outcome == 'success'
