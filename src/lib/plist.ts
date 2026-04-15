@@ -149,3 +149,110 @@ export function diffPlistKeys(oldXml: string, newXml: string): PlistDiff {
 
   return { added, removed, changed, unchanged };
 }
+
+export interface KeyDiffEntry {
+  key: string;
+  type: "added" | "removed" | "changed" | "context";
+  oldXml?: string;
+  newXml?: string;
+}
+
+function serializeKeyValue(key: string, value: PlistValue): string {
+  const keyLine = `<key>${escapeXml(key)}</key>`;
+  const valueLine = valueToXml(value, 0);
+  return `${keyLine}\n${valueLine}`;
+}
+
+export function computeKeyLevelDiff(
+  oldXml: string,
+  newXml: string,
+  contextCount = 1
+): KeyDiffEntry[] {
+  const oldJson = plistToJson(oldXml);
+  const newJson = plistToJson(newXml);
+
+  const oldKeys = new Set(Object.keys(oldJson));
+  const newKeys = new Set(Object.keys(newJson));
+
+  // Sorted keys list (union of both)
+  const sortedKeys = [...new Set([...oldKeys, ...newKeys])].sort();
+
+  // Categorize each key
+  const added = new Set<string>();
+  const removed = new Set<string>();
+  const changed = new Set<string>();
+
+  for (const key of sortedKeys) {
+    const inOld = oldKeys.has(key);
+    const inNew = newKeys.has(key);
+
+    if (!inOld && inNew) {
+      added.add(key);
+    } else if (inOld && !inNew) {
+      removed.add(key);
+    } else if (JSON.stringify(oldJson[key]) !== JSON.stringify(newJson[key])) {
+      changed.add(key);
+    }
+  }
+
+  const changedSet = new Set([...added, ...removed, ...changed]);
+
+  // Determine which keys need to be shown as context
+  const contextKeys = new Set<string>();
+  for (let i = 0; i < sortedKeys.length; i++) {
+    if (changedSet.has(sortedKeys[i])) {
+      for (let j = Math.max(0, i - contextCount); j <= Math.min(sortedKeys.length - 1, i + contextCount); j++) {
+        if (!changedSet.has(sortedKeys[j])) {
+          contextKeys.add(sortedKeys[j]);
+        }
+      }
+    }
+  }
+
+  // Build result entries
+  const result: KeyDiffEntry[] = [];
+  const includeKeys = new Set([...changedSet, ...contextKeys]);
+  let lastIncludedIdx = -1;
+
+  for (let i = 0; i < sortedKeys.length; i++) {
+    const key = sortedKeys[i];
+    if (!includeKeys.has(key)) continue;
+
+    // Add ellipsis marker if there's a gap
+    if (lastIncludedIdx !== -1 && i - lastIncludedIdx > 1) {
+      result.push({ key: "···", type: "context" });
+    }
+    lastIncludedIdx = i;
+
+    if (added.has(key)) {
+      result.push({
+        key,
+        type: "added",
+        newXml: serializeKeyValue(key, newJson[key]),
+      });
+    } else if (removed.has(key)) {
+      result.push({
+        key,
+        type: "removed",
+        oldXml: serializeKeyValue(key, oldJson[key]),
+      });
+    } else if (changed.has(key)) {
+      result.push({
+        key,
+        type: "changed",
+        oldXml: serializeKeyValue(key, oldJson[key]),
+        newXml: serializeKeyValue(key, newJson[key]),
+      });
+    } else {
+      // Context key - present in both, show old (they're equal)
+      result.push({
+        key,
+        type: "context",
+        oldXml: serializeKeyValue(key, oldJson[key]),
+        newXml: serializeKeyValue(key, newJson[key]),
+      });
+    }
+  }
+
+  return result;
+}

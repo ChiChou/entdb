@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { diffPlistKeys, type PlistDiff } from "@/lib/plist";
+import { diffPlistKeys, computeKeyLevelDiff, type PlistDiff, type KeyDiffEntry } from "@/lib/plist";
 import { Columns2, Rows3, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -10,124 +10,6 @@ interface DiffViewerProps {
   newXml: string;
   oldLabel: string;
   newLabel: string;
-}
-
-type DiffLine = {
-  type: "context" | "add" | "remove";
-  content: string;
-  oldNum?: number;
-  newNum?: number;
-};
-
-type SplitRow = {
-  left?: { num?: number; content: string; type: "context" | "remove" };
-  right?: { num?: number; content: string; type: "context" | "add" };
-};
-
-function computeDiff(oldText: string, newText: string, contextLines = 3): DiffLine[] {
-  const oldLines = oldText.split("\n");
-  const newLines = newText.split("\n");
-
-  const oldSet = new Set(oldLines);
-  const newSet = new Set(newLines);
-
-  const rawDiff: DiffLine[] = [];
-  let oi = 0,
-    ni = 0;
-
-  while (oi < oldLines.length || ni < newLines.length) {
-    const oldLine = oldLines[oi];
-    const newLine = newLines[ni];
-
-    if (oi < oldLines.length && ni < newLines.length && oldLine === newLine) {
-      rawDiff.push({ type: "context", content: oldLine, oldNum: oi + 1, newNum: ni + 1 });
-      oi++;
-      ni++;
-    } else if (oi < oldLines.length && !newSet.has(oldLine)) {
-      rawDiff.push({ type: "remove", content: oldLine, oldNum: oi + 1 });
-      oi++;
-    } else if (ni < newLines.length && !oldSet.has(newLine)) {
-      rawDiff.push({ type: "add", content: newLine, newNum: ni + 1 });
-      ni++;
-    } else {
-      rawDiff.push({ type: "context", content: oldLine, oldNum: oi + 1, newNum: ni + 1 });
-      oi++;
-      ni++;
-    }
-  }
-
-  const includeLines = new Set<number>();
-  rawDiff.forEach((line, idx) => {
-    if (line.type !== "context") {
-      for (let i = Math.max(0, idx - contextLines); i <= Math.min(rawDiff.length - 1, idx + contextLines); i++) {
-        includeLines.add(i);
-      }
-    }
-  });
-
-  const result: DiffLine[] = [];
-  let lastIncluded = -1;
-
-  rawDiff.forEach((line, idx) => {
-    if (includeLines.has(idx)) {
-      if (lastIncluded !== -1 && idx - lastIncluded > 1) {
-        result.push({ type: "context", content: "···", oldNum: undefined, newNum: undefined });
-      }
-      result.push(line);
-      lastIncluded = idx;
-    }
-  });
-
-  return result;
-}
-
-function computeSplitDiff(diffLines: DiffLine[]): SplitRow[] {
-  const rows: SplitRow[] = [];
-  let i = 0;
-
-  while (i < diffLines.length) {
-    const line = diffLines[i];
-
-    if (line.type === "context") {
-      rows.push({
-        left: { num: line.oldNum, content: line.content, type: "context" },
-        right: { num: line.newNum, content: line.content, type: "context" },
-      });
-      i++;
-    } else if (line.type === "remove") {
-      // Collect consecutive removes
-      const removes: DiffLine[] = [];
-      while (i < diffLines.length && diffLines[i].type === "remove") {
-        removes.push(diffLines[i]);
-        i++;
-      }
-      // Collect consecutive adds
-      const adds: DiffLine[] = [];
-      while (i < diffLines.length && diffLines[i].type === "add") {
-        adds.push(diffLines[i]);
-        i++;
-      }
-      // Pair them up
-      const maxLen = Math.max(removes.length, adds.length);
-      for (let j = 0; j < maxLen; j++) {
-        const row: SplitRow = {};
-        if (j < removes.length) {
-          row.left = { num: removes[j].oldNum, content: removes[j].content, type: "remove" };
-        }
-        if (j < adds.length) {
-          row.right = { num: adds[j].newNum, content: adds[j].content, type: "add" };
-        }
-        rows.push(row);
-      }
-    } else if (line.type === "add") {
-      rows.push({
-        right: { num: line.newNum, content: line.content, type: "add" },
-      });
-      i++;
-    }
-  }
-
-  return rows;
 }
 
 export function DiffViewer({
@@ -145,14 +27,9 @@ export function DiffViewer({
     [oldXml, newXml],
   );
 
-  const diffLines = useMemo(
-    () => computeDiff(oldXml, newXml),
+  const keyLevelDiff = useMemo(
+    () => computeKeyLevelDiff(oldXml, newXml),
     [oldXml, newXml],
-  );
-
-  const splitRows = useMemo(
-    () => computeSplitDiff(diffLines),
-    [diffLines],
   );
 
   const hasChanges =
@@ -204,72 +81,196 @@ export function DiffViewer({
 
         {viewMode === "unified" ? (
           <pre className="p-4 overflow-x-auto text-sm font-mono">
-            {diffLines.map((line, i) => (
-              <div
-                key={i}
-                className={
-                  line.type === "remove"
-                    ? "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
-                    : line.type === "add"
-                      ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
-                      : ""
-                }
-              >
-                <span className="select-none opacity-50 mr-2">
-                  {line.type === "remove" ? "-" : line.type === "add" ? "+" : " "}
-                </span>
-                {line.content}
-              </div>
+            {keyLevelDiff.map((entry, i) => (
+              <KeyDiffBlock key={i} entry={entry} mode="unified" />
             ))}
           </pre>
         ) : (
           <div className="overflow-x-auto">
             <div className="grid grid-cols-2 text-sm font-mono min-w-[600px]">
-              {splitRows.map((row, i) => (
-                <div key={i} className="contents">
-                  <div
-                    className={`px-4 py-0.5 border-r ${
-                      row.left?.type === "remove"
-                        ? "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
-                        : row.left
-                          ? ""
-                          : "bg-muted/50"
-                    }`}
-                  >
-                    {row.left && (
-                      <>
-                        <span className="select-none opacity-50 mr-2 inline-block w-8 text-right">
-                          {row.left.num ?? ""}
-                        </span>
-                        {row.left.content}
-                      </>
-                    )}
-                  </div>
-                  <div
-                    className={`px-4 py-0.5 ${
-                      row.right?.type === "add"
-                        ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
-                        : row.right
-                          ? ""
-                          : "bg-muted/50"
-                    }`}
-                  >
-                    {row.right && (
-                      <>
-                        <span className="select-none opacity-50 mr-2 inline-block w-8 text-right">
-                          {row.right.num ?? ""}
-                        </span>
-                        {row.right.content}
-                      </>
-                    )}
-                  </div>
-                </div>
+              {keyLevelDiff.map((entry, i) => (
+                <KeyDiffBlock key={i} entry={entry} mode="split" />
               ))}
             </div>
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function KeyDiffBlock({
+  entry,
+  mode,
+}: {
+  entry: KeyDiffEntry;
+  mode: "unified" | "split";
+}) {
+  // Ellipsis marker
+  if (entry.key === "···") {
+    if (mode === "unified") {
+      return (
+        <div className="text-muted-foreground py-1">
+          <span className="select-none opacity-50 mr-2"> </span>
+          ···
+        </div>
+      );
+    }
+    return (
+      <div className="contents">
+        <div className="px-4 py-1 border-r text-muted-foreground">···</div>
+        <div className="px-4 py-1 text-muted-foreground">···</div>
+      </div>
+    );
+  }
+
+  const oldLines = entry.oldXml?.split("\n") ?? [];
+  const newLines = entry.newXml?.split("\n") ?? [];
+
+  if (mode === "unified") {
+    if (entry.type === "context") {
+      return (
+        <>
+          {oldLines.map((line, i) => (
+            <div key={i}>
+              <span className="select-none opacity-50 mr-2"> </span>
+              {line}
+            </div>
+          ))}
+        </>
+      );
+    }
+    if (entry.type === "removed") {
+      return (
+        <>
+          {oldLines.map((line, i) => (
+            <div
+              key={i}
+              className="bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
+            >
+              <span className="select-none opacity-50 mr-2">-</span>
+              {line}
+            </div>
+          ))}
+        </>
+      );
+    }
+    if (entry.type === "added") {
+      return (
+        <>
+          {newLines.map((line, i) => (
+            <div
+              key={i}
+              className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
+            >
+              <span className="select-none opacity-50 mr-2">+</span>
+              {line}
+            </div>
+          ))}
+        </>
+      );
+    }
+    // changed: show old then new
+    return (
+      <>
+        {oldLines.map((line, i) => (
+          <div
+            key={`old-${i}`}
+            className="bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
+          >
+            <span className="select-none opacity-50 mr-2">-</span>
+            {line}
+          </div>
+        ))}
+        {newLines.map((line, i) => (
+          <div
+            key={`new-${i}`}
+            className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
+          >
+            <span className="select-none opacity-50 mr-2">+</span>
+            {line}
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  // Split mode
+  if (entry.type === "context") {
+    const maxLines = Math.max(oldLines.length, newLines.length);
+    return (
+      <>
+        {Array.from({ length: maxLines }).map((_, i) => (
+          <div key={i} className="contents">
+            <div className="px-4 py-0.5 border-r whitespace-pre">
+              {oldLines[i] ?? ""}
+            </div>
+            <div className="px-4 py-0.5 whitespace-pre">
+              {newLines[i] ?? ""}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  if (entry.type === "removed") {
+    return (
+      <>
+        {oldLines.map((line, i) => (
+          <div key={i} className="contents">
+            <div className="px-4 py-0.5 border-r bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 whitespace-pre">
+              {line}
+            </div>
+            <div className="px-4 py-0.5 bg-muted/50" />
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  if (entry.type === "added") {
+    return (
+      <>
+        {newLines.map((line, i) => (
+          <div key={i} className="contents">
+            <div className="px-4 py-0.5 border-r bg-muted/50" />
+            <div className="px-4 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 whitespace-pre">
+              {line}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  // changed: pair up lines side by side
+  const maxLines = Math.max(oldLines.length, newLines.length);
+  return (
+    <>
+      {Array.from({ length: maxLines }).map((_, i) => (
+        <div key={i} className="contents">
+          <div
+            className={`px-4 py-0.5 border-r whitespace-pre ${
+              oldLines[i]
+                ? "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
+                : "bg-muted/50"
+            }`}
+          >
+            {oldLines[i] ?? ""}
+          </div>
+          <div
+            className={`px-4 py-0.5 whitespace-pre ${
+              newLines[i]
+                ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
+                : "bg-muted/50"
+            }`}
+          >
+            {newLines[i] ?? ""}
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 
