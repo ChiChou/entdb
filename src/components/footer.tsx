@@ -20,7 +20,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
             >
-              Source Code
+              Source
             </a>
             <a
               href="https://github.com/ChiChou/entdb-indexer"
@@ -28,7 +28,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
             >
-              Firmware Indexer
+              Indexer
             </a>
             <a
               href="https://github.com/ChiChou/entdb-data"
@@ -36,7 +36,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors"
             >
-              Raw Data
+              Data
             </a>
             <span className="text-muted-foreground/30">|</span>
             <a
