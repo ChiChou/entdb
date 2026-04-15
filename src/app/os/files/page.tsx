@@ -8,6 +8,7 @@ import { Search, X, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FileSystem from "@/components/filesystem";
+import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
 
 export default function Files() {
@@ -45,64 +46,69 @@ export default function Files() {
     setExpandAll(isFiltering ? true : null);
   }, [isFiltering]);
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-4 shrink-0">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Filter paths..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="pl-9 pr-9"
-          />
-          {keyword && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setKeyword("")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        {!loading && files.length > 0 && (
-          <div className="flex items-center border border-border rounded-md">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpandAll(true)}
-              className="h-8 px-2 rounded-r-none"
-              title="Expand All"
-            >
-              <ChevronsUpDown className="h-4 w-4" />
-            </Button>
-            <div className="w-px h-4 bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpandAll(false)}
-              className="h-8 px-2 rounded-l-none"
-              title="Collapse All"
-            >
-              <ChevronsDownUp className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        {!loading && (
-          <div className="text-sm text-muted-foreground whitespace-nowrap">
-            {isFiltering ? (
-              <>
-                {filtered.length} of {files.length} paths
-              </>
-            ) : (
-              <>{files.length} paths</>
-            )}
-          </div>
+  const filterControls = (
+    <>
+      <div className="relative flex-1 sm:flex-none sm:w-96">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Filter paths..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          className="pl-9 pr-9"
+        />
+        {keyword && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setKeyword("")}
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         )}
       </div>
+      {!loading && files.length > 0 && (
+        <div className="flex items-center border border-border rounded-md">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpandAll(true)}
+            className="h-8 px-2 rounded-r-none"
+            title="Expand All"
+          >
+            <ChevronsUpDown className="h-4 w-4" />
+          </Button>
+          <div className="w-px h-4 bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpandAll(false)}
+            className="h-8 px-2 rounded-l-none"
+            title="Collapse All"
+          >
+            <ChevronsDownUp className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col h-full">
+      <HeaderPortal>{filterControls}</HeaderPortal>
+
+      {!loading && (
+        <div className="mb-3 text-sm text-muted-foreground">
+          {isFiltering ? (
+            <>
+              {filtered.length} of {files.length} paths
+            </>
+          ) : (
+            <>{files.length} paths</>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-auto">
         {loading ? (

@@ -6,6 +6,7 @@ import { Moon, Sun, Key, Folder } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { VersionSwitcher } from "./version-switcher";
+import { HEADER_PORTAL_ID } from "./header-portal";
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -44,31 +45,29 @@ function OSBreadcrumb({ os, currentPage }: { os: string; currentPage: string }) 
         <VersionSwitcher currentOs={os} />
       </div>
 
-      <div className="hidden sm:flex">
-        <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
-          <Link
-            href={`/os/keys?os=${os}`}
-            className={`flex items-center gap-1.5 px-3 py-1 text-sm rounded-md transition-colors ${
-              currentPage === "keys"
-                ? "bg-background text-foreground shadow-sm font-medium"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Key className="h-3.5 w-3.5" />
-            Entitlement Keys
-          </Link>
-          <Link
-            href={`/os/files?os=${os}`}
-            className={`flex items-center gap-1.5 px-3 py-1 text-sm rounded-md transition-colors ${
-              currentPage === "files"
-                ? "bg-background text-foreground shadow-sm font-medium"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Folder className="h-3.5 w-3.5" />
-            Browse Files
-          </Link>
-        </div>
+      <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
+        <Link
+          href={`/os/keys?os=${os}`}
+          className={`flex items-center gap-1 px-2 py-1 text-sm rounded-md transition-colors whitespace-nowrap ${
+            currentPage === "keys"
+              ? "bg-background text-foreground shadow-sm font-medium"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Key className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline">Keys</span>
+        </Link>
+        <Link
+          href={`/os/files?os=${os}`}
+          className={`flex items-center gap-1 px-2 py-1 text-sm rounded-md transition-colors whitespace-nowrap ${
+            currentPage === "files"
+              ? "bg-background text-foreground shadow-sm font-medium"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Folder className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline">Files</span>
+        </Link>
       </div>
     </div>
   );
@@ -120,70 +119,31 @@ export function NavTop() {
         ? "find"
         : "keys";
 
+  const showHeaderControls = isOSPage && (currentPage === "keys" || currentPage === "files" || currentPage === "find");
+
   return (
-    <header className="shrink-0 border-b border-border bg-background">
-      {/* Desktop: single row */}
-      <div className="hidden sm:flex items-center gap-4 px-4 md:px-6 h-14">
-        <h1 className="text-xl font-bold shrink-0">
-          <Link href="/" className="hover:text-muted-foreground transition-colors">
-            entdb
-          </Link>
-        </h1>
-
-        <div className="flex-1 flex items-center min-w-0">
-          {isHome && <HomeControls />}
-          {isOSPage && os && <OSBreadcrumb os={os} currentPage={currentPage} />}
-        </div>
-
-        <ThemeToggle />
-      </div>
-
-      {/* Mobile: two rows when needed */}
-      <div className="sm:hidden">
-        <div className="flex items-center justify-between px-4 h-12">
-          <h1 className="text-lg font-bold">
+    <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 md:px-6 py-3">
+        {/* Left group: logo + breadcrumb */}
+        <div className="flex items-center gap-4 min-w-0 shrink-0">
+          <h1 className="text-xl font-bold shrink-0">
             <Link href="/" className="hover:text-muted-foreground transition-colors">
               entdb
             </Link>
           </h1>
-          <ThemeToggle />
+          {isHome && <HomeControls />}
+          {isOSPage && os && <OSBreadcrumb os={os} currentPage={currentPage} />}
         </div>
 
-        {(isHome || (isOSPage && os)) && (
-          <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto">
-            {isHome && <HomeControls />}
-            {isOSPage && os && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground shrink-0">{os.split("/")[0]}</span>
-                <VersionSwitcher currentOs={os} />
-                <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30 shrink-0">
-                  <Link
-                    href={`/os/keys?os=${os}`}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
-                      currentPage === "keys"
-                        ? "bg-background text-foreground shadow-sm font-medium"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    <Key className="h-3 w-3" />
-                    Keys
-                  </Link>
-                  <Link
-                    href={`/os/files?os=${os}`}
-                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-colors ${
-                      currentPage === "files"
-                        ? "bg-background text-foreground shadow-sm font-medium"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    <Folder className="h-3 w-3" />
-                    Files
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="hidden sm:block flex-1 min-w-0" />
+
+        {/* Right group: filter + theme */}
+        <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
+          {showHeaderControls && (
+            <div id={HEADER_PORTAL_ID} className="flex items-center gap-2 flex-1 sm:flex-none" />
+          )}
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

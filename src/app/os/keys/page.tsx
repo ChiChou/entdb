@@ -8,7 +8,9 @@ import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
+import { tokenizeKeys, getTopTokens } from "@/lib/tokenizer";
 
 export default function Keys() {
   const params = useSearchParams();
@@ -47,33 +49,44 @@ export default function Keys() {
     [debouncedKeyword, keys]
   );
 
+  const topTokens = useMemo(() => {
+    if (keys.length === 0) return [];
+    const freq = tokenizeKeys(keys);
+    return getTopTokens(freq, 15, 10);
+  }, [keys]);
+
   const isFiltering = debouncedKeyword.length > 0;
+
+  const filterControls = (
+    <div className="relative flex-1 sm:flex-none sm:w-96">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        type="text"
+        placeholder="Filter entitlement keys..."
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+        className="pl-9 pr-9"
+      />
+      {keyword && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setKeyword("")}
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 shrink-0">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Filter entitlement keys..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="pl-9 pr-9"
-          />
-          {keyword && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setKeyword("")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        {!loading && (
-          <div className="text-sm text-muted-foreground whitespace-nowrap">
+      <HeaderPortal>{filterControls}</HeaderPortal>
+
+      {!loading && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="text-sm text-muted-foreground">
             {isFiltering ? (
               <>
                 {filtered.length} of {keys.length} keys
@@ -81,9 +94,23 @@ export default function Keys() {
             ) : (
               <>{keys.length} entitlement keys</>
             )}
-          </div>
-        )}
-      </div>
+          </span>
+          {topTokens.length > 0 && !isFiltering && (
+            <div className="flex flex-wrap gap-1">
+              {topTokens.map(({ token }) => (
+                <button
+                  key={token}
+                  type="button"
+                  onClick={() => setKeyword(token)}
+                  className="px-2 py-0.5 text-xs rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {token}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">

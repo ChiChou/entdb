@@ -7,6 +7,7 @@ import { Search, X, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FileSystem from "@/components/filesystem";
+import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
 
 export default function FindByKey() {
@@ -67,69 +68,68 @@ export default function FindByKey() {
     setExpandAll(isFiltering ? true : null);
   }, [isFiltering]);
 
+  const filterControls = (
+    <>
+      <div className="relative flex-1 sm:flex-none sm:w-96">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Filter paths..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          className="pl-9 pr-9"
+        />
+        {keyword && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setKeyword("")}
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      {!loading && paths.length > 0 && (
+        <div className="flex items-center border border-border rounded-md">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpandAll(true)}
+            className="h-8 px-2 rounded-r-none"
+            title="Expand All"
+          >
+            <ChevronsUpDown className="h-4 w-4" />
+          </Button>
+          <div className="w-px h-4 bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpandAll(false)}
+            className="h-8 px-2 rounded-l-none"
+            title="Collapse All"
+          >
+            <ChevronsDownUp className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4 shrink-0">
-        <div className="min-w-0 shrink-0">
+      <HeaderPortal>{filterControls}</HeaderPortal>
+
+      <div className="mb-3 shrink-0 flex items-baseline justify-between gap-4">
+        <div>
           <span className="text-sm text-muted-foreground">Binaries with </span>
           <code className="text-sm break-all text-primary font-medium">{key}</code>
         </div>
-        <div className="flex items-center gap-2 sm:ml-auto">
-        <div className="relative flex-1 sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Filter paths..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="pl-9 pr-9"
-          />
-          {keyword && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setKeyword("")}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        {!loading && paths.length > 0 && (
-          <div className="flex items-center border border-border rounded-md">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpandAll(true)}
-              className="h-8 px-2 rounded-r-none"
-              title="Expand All"
-            >
-              <ChevronsUpDown className="h-4 w-4" />
-            </Button>
-            <div className="w-px h-4 bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpandAll(false)}
-              className="h-8 px-2 rounded-l-none"
-              title="Collapse All"
-            >
-              <ChevronsDownUp className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
         {!loading && (
-          <div className="text-sm text-muted-foreground whitespace-nowrap">
-            {isFiltering ? (
-              <>
-                {filtered.length} of {paths.length} paths
-              </>
-            ) : (
-              <>{paths.length} paths</>
-            )}
-          </div>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {isFiltering ? `${filtered.length} of ${paths.length}` : paths.length} paths
+          </span>
         )}
-        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">
