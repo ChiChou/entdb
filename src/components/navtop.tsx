@@ -6,7 +6,7 @@ import { Moon, Sun, Key, Folder } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { VersionSwitcher } from "./version-switcher";
-import { HEADER_PORTAL_ID } from "./header-portal";
+import { HEADER_PORTAL_ID, HEADER_PORTAL_LEFT_ID } from "./header-portal";
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -119,12 +119,12 @@ export function NavTop() {
         ? "find"
         : "keys";
 
-  const showHeaderControls = isOSPage && (currentPage === "keys" || currentPage === "files" || currentPage === "find");
+  const showHeaderControls = isHome || (isOSPage && (currentPage === "keys" || currentPage === "files" || currentPage === "find"));
 
   return (
     <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 md:px-6 py-3">
-        {/* Left group: logo + breadcrumb */}
+        {/* Left group: logo + breadcrumb + left portal */}
         <div className="flex items-center gap-4 min-w-0 shrink-0">
           <h1 className="text-xl font-bold shrink-0">
             <Link href="/" className="hover:text-muted-foreground transition-colors">
@@ -132,6 +132,7 @@ export function NavTop() {
             </Link>
           </h1>
           {isHome && <HomeControls />}
+          {isHome && <div id={HEADER_PORTAL_LEFT_ID} className="flex items-center" />}
           {isOSPage && os && <OSBreadcrumb os={os} currentPage={currentPage} />}
         </div>
 

@@ -4,8 +4,14 @@ import { createPortal } from "react-dom";
 import { useEffect, useState, type ReactNode } from "react";
 
 export const HEADER_PORTAL_ID = "header-controls-portal";
+export const HEADER_PORTAL_LEFT_ID = "header-controls-portal-left";
 
-export function HeaderPortal({ children }: { children: ReactNode }) {
+interface HeaderPortalProps {
+  children: ReactNode;
+  position?: "left" | "right";
+}
+
+export function HeaderPortal({ children, position = "right" }: HeaderPortalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -14,7 +20,8 @@ export function HeaderPortal({ children }: { children: ReactNode }) {
 
   if (!mounted) return null;
 
-  const target = document.getElementById(HEADER_PORTAL_ID);
+  const targetId = position === "left" ? HEADER_PORTAL_LEFT_ID : HEADER_PORTAL_ID;
+  const target = document.getElementById(targetId);
   if (!target) return null;
 
   return createPortal(children, target);

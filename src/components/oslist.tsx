@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 
 import { Group, OS } from "@/lib/types";
 import { dataURL } from "@/lib/env";
 import { Skeleton } from "./ui/skeleton";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { HeaderPortal } from "./header-portal";
 
 function responseOK(r: Response) {
   if (!r.ok) {
@@ -32,6 +36,16 @@ function compareVersion(a: string, b: string) {
 interface MajorGroup {
   major: string;
   versions: OS[];
+}
+
+const PLATFORM_NAMES: Record<string, string> = {
+  iOS: "iOS",
+  mac: "macOS",
+  osx: "OS X",
+};
+
+function getPlatformName(key: string): string {
+  return PLATFORM_NAMES[key] || key;
 }
 
 function groupByMajor(list: OS[]): MajorGroup[] {
@@ -61,6 +75,15 @@ export default function OSList() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [highlights, setHighlights] = useState<Set<string>>(new Set());
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
+  const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [keyword]);
 
   useEffect(() => {
     const set: Set<string> = new Set();
@@ -150,8 +173,31 @@ export default function OSList() {
   };
 
   const filteredGroups = useMemo(() => {
-    return groups.filter((g) => selectedPlatforms.has(g.name));
-  }, [groups, selectedPlatforms]);
+    const kw = debouncedKeyword.toLowerCase();
+    return groups
+      .filter((g) => selectedPlatforms.has(g.name))
+      .map((g) => {
+        if (!kw) return g;
+        // Filter OS entries by product name or version
+        const filteredList = g.list.filter(
+          (os) =>
+            os.name.toLowerCase().includes(kw) ||
+            os.version.toLowerCase().includes(kw)
+        );
+        return { ...g, list: filteredList };
+      })
+      .filter((g) => g.list.length > 0);
+  }, [groups, selectedPlatforms, debouncedKeyword]);
+
+  const totalCount = useMemo(() => {
+    return groups.reduce((sum, g) => sum + g.list.length, 0);
+  }, [groups]);
+
+  const filteredCount = useMemo(() => {
+    return filteredGroups.reduce((sum, g) => sum + g.list.length, 0);
+  }, [filteredGroups]);
+
+  const isFiltering = debouncedKeyword.length > 0;
 
   return (
     <div>
@@ -178,31 +224,60 @@ export default function OSList() {
 
       {!loading && groups.length > 0 && (
         <>
-          {/* Platform filters */}
-          <div className="flex items-center gap-1 mb-6">
-            {groups.map((group) => (
-              <button
-                key={group.name}
-                onClick={() => togglePlatform(group.name)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  selectedPlatforms.has(group.name)
-                    ? "bg-foreground text-background font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                }`}
-              >
-                {group.name}
-              </button>
-            ))}
-          </div>
+          <HeaderPortal position="left">
+            <div className="flex items-center gap-1">
+              {groups.map((group) => (
+                <button
+                  key={group.name}
+                  onClick={() => togglePlatform(group.name)}
+                  className={`px-2 py-1 text-sm rounded-md transition-colors ${
+                    selectedPlatforms.has(group.name)
+                      ? "bg-foreground text-background font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`}
+                >
+                  {getPlatformName(group.name)}
+                </button>
+              ))}
+            </div>
+          </HeaderPortal>
+
+          <HeaderPortal>
+            <div className="relative flex-1 sm:flex-none sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Filter..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {keyword && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setKeyword("")}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </HeaderPortal>
+
+          {isFiltering && (
+            <div className="mb-3 text-sm text-muted-foreground">
+              {filteredCount} of {totalCount} builds
+            </div>
+          )}
 
           {filteredGroups.map((group) => {
             const majorGroups = groupByMajor(group.list);
 
             return (
               <section key={group.name} id={group.name} className="mb-6">
-                <h2 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                  {group.name}
-                  <span className="flex-1 border-t border-border" />
+                <h2 className="text-2xl font-semibold text-center text-muted-foreground mb-4">
+                  {getPlatformName(group.name)}
                 </h2>
 
                 {!showAll ? (
@@ -215,6 +290,9 @@ export default function OSList() {
                             href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
                             className="block p-3 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
                           >
+                            <div className="text-xs text-muted-foreground mb-1 truncate">
+                              {os.name}
+                            </div>
                             <div className="flex justify-between items-center">
                               <span className="font-medium">{os.version}</span>
                               <span className="text-xs text-muted-foreground font-mono">
@@ -230,7 +308,7 @@ export default function OSList() {
                     {majorGroups.map((majorGroup) => (
                       <div key={majorGroup.major}>
                         <h3 className="text-xs font-medium text-muted-foreground mb-2">
-                          {group.name} {majorGroup.major}
+                          {getPlatformName(group.name)} {majorGroup.major}
                         </h3>
                         <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                           {majorGroup.versions.map((os, index) => (
@@ -239,6 +317,9 @@ export default function OSList() {
                                 href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
                                 className="block p-3 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
                               >
+                                <div className="text-xs text-muted-foreground mb-1 truncate">
+                                  {os.name}
+                                </div>
                                 <div className="flex justify-between items-center">
                                   <span className="font-medium">{os.version}</span>
                                   <span className="text-xs text-muted-foreground font-mono">
