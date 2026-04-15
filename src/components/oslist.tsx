@@ -230,6 +230,7 @@ export default function OSList() {
 
       {!loading && groups.length > 0 && (
         <>
+          {/* Platform buttons - in header on desktop, inline on mobile */}
           <HeaderPortal position="left">
             <div className="flex items-center gap-1">
               {groups.map((group) => (
@@ -270,6 +271,23 @@ export default function OSList() {
               )}
             </div>
           </HeaderPortal>
+
+          {/* Mobile platform buttons - shown inline in content */}
+          <div className="flex sm:hidden items-center gap-1 mb-4">
+            {groups.map((group) => (
+              <button
+                key={group.name}
+                onClick={() => togglePlatform(group.name)}
+                className={`px-2 py-1 text-sm rounded-md transition-colors ${
+                  selectedPlatforms.has(group.name)
+                    ? "bg-foreground text-background font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                }`}
+              >
+                {getPlatformName(group.name)}
+              </button>
+            ))}
+          </div>
 
           {isFiltering && (
             <div className="mb-3 text-sm text-muted-foreground">

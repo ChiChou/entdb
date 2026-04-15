@@ -39,13 +39,13 @@ function OSBreadcrumb({ os, currentPage }: { os: string; currentPage: string }) 
   const [platform] = os.split("/");
 
   return (
-    <div className="flex items-center gap-4 text-sm min-w-0 flex-1">
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-muted-foreground">{platform}</span>
+    <div className="flex items-center gap-2 sm:gap-4 text-sm min-w-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <span className="text-muted-foreground hidden sm:inline">{platform}</span>
         <VersionSwitcher currentOs={os} />
       </div>
 
-      <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
+      <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30 shrink-0">
         <Link
           href={`/os/keys?os=${os}`}
           className={`flex items-center gap-1 px-2 py-1 text-sm rounded-md transition-colors whitespace-nowrap ${
@@ -125,14 +125,14 @@ export function NavTop() {
     <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 md:px-6 py-3">
         {/* Left group: logo + breadcrumb + left portal */}
-        <div className="flex items-center gap-4 min-w-0 shrink-0">
+        <div className="flex items-center gap-4 min-w-0 flex-wrap">
           <h1 className="text-xl font-bold shrink-0">
             <Link href="/" className="hover:text-muted-foreground transition-colors">
               entdb
             </Link>
           </h1>
           {isHome && <HomeControls />}
-          {isHome && <div id={HEADER_PORTAL_LEFT_ID} className="flex items-center" />}
+          {isHome && <div id={HEADER_PORTAL_LEFT_ID} className="hidden sm:flex items-center" />}
           {isOSPage && os && <OSBreadcrumb os={os} currentPage={currentPage} />}
         </div>
 
