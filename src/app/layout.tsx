@@ -35,7 +35,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex flex-col h-screen overflow-hidden">
+          <div className="flex flex-col min-h-screen">
             <NavTop />
             <Toaster />
             <Suspense>

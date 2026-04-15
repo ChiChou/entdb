@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, memo, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useSearchParams } from "next/navigation";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import Link from "next/link";
 import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
 
@@ -95,12 +94,58 @@ const KeyBadge = memo(function KeyBadge({
   );
 });
 
-interface RowItem {
-  type: "header" | "keys" | "singles";
+const KeyGroup = memo(function KeyGroup({
+  prefix,
+  keys,
+  os,
+  cols,
+  isOpen,
+  onToggle,
+  isFiltering,
+}: {
   prefix: string;
   keys: string[];
+  os: string;
+  cols: number;
   isOpen: boolean;
-}
+  onToggle: () => void;
+  isFiltering: boolean;
+}) {
+  const autoExpand = keys.length <= 8 || isFiltering;
+  const expanded = isOpen || autoExpand;
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 px-2 py-2 hover:bg-accent rounded transition-colors text-left w-full"
+      >
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        )}
+        <span className="font-mono text-sm text-muted-foreground">
+          {prefix}
+          <span className="text-foreground font-medium">.*</span>
+        </span>
+        <span className="text-xs text-muted-foreground bg-background border px-1.5 py-0.5 rounded-full">
+          {keys.length}
+        </span>
+      </button>
+      {expanded && (
+        <div
+          className="grid gap-x-6 gap-y-1 pl-8 pb-3 pr-2"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        >
+          {keys.map((key) => (
+            <KeyBadge key={key} keyName={key} prefix={prefix} os={os} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
 
 export default function Keys() {
   const params = useSearchParams();
@@ -113,10 +158,8 @@ export default function Keys() {
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
-  const parentRef = useRef<HTMLDivElement>(null);
   const cols = useColumnCount();
 
-  // Debounce keyword with 300ms delay
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedKeyword(keyword);
@@ -150,72 +193,6 @@ export default function Keys() {
     [grouped]
   );
 
-  // Build flat list of rows for virtualization
-  const rows = useMemo(() => {
-    const result: RowItem[] = [];
-    let pendingSingles: string[] = [];
-
-    const flushSingles = () => {
-      if (pendingSingles.length > 0) {
-        result.push({
-          type: "singles",
-          prefix: "",
-          keys: pendingSingles,
-          isOpen: true,
-        });
-        pendingSingles = [];
-      }
-    };
-
-    for (const prefix of sortedPrefixes) {
-      const keys = grouped[prefix];
-
-      // Single key that equals its prefix - batch with other singles
-      if (keys.length === 1 && keys[0] === prefix) {
-        pendingSingles.push(keys[0]);
-        continue;
-      }
-
-      // Flush any pending singles before adding a group
-      flushSingles();
-
-      const isOpen = openGroups.has(prefix) || keys.length <= 8 || debouncedKeyword.length > 0;
-
-      result.push({
-        type: "header",
-        prefix,
-        keys,
-        isOpen,
-      });
-
-      if (isOpen) {
-        result.push({
-          type: "keys",
-          prefix,
-          keys,
-          isOpen: true,
-        });
-      }
-    }
-
-    // Flush remaining singles
-    flushSingles();
-
-    return result;
-  }, [sortedPrefixes, grouped, openGroups, debouncedKeyword]);
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: (index) => {
-      const row = rows[index];
-      if (row.type === "header") return 40;
-      const keyRows = Math.ceil(row.keys.length / cols);
-      return keyRows * 32 + 16;
-    },
-    overscan: 5,
-  });
-
   const isFiltering = debouncedKeyword.length > 0;
 
   const toggleGroup = useCallback((prefix: string) => {
@@ -237,6 +214,23 @@ export default function Keys() {
   const handleCollapseAll = useCallback(() => {
     setOpenGroups(new Set());
   }, []);
+
+  // Separate single keys from groups
+  const { groups, singles } = useMemo(() => {
+    const groups: { prefix: string; keys: string[] }[] = [];
+    const singles: string[] = [];
+
+    for (const prefix of sortedPrefixes) {
+      const prefixKeys = grouped[prefix];
+      if (prefixKeys.length === 1 && prefixKeys[0] === prefix) {
+        singles.push(prefixKeys[0]);
+      } else {
+        groups.push({ prefix, keys: prefixKeys });
+      }
+    }
+
+    return { groups, singles };
+  }, [sortedPrefixes, grouped]);
 
   return (
     <div className="flex flex-col h-full">
@@ -346,76 +340,30 @@ export default function Keys() {
           )}
         </div>
       ) : (
-        <div ref={parentRef} className="flex-1 min-h-0 overflow-auto">
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: "100%",
-              position: "relative",
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
+        <div className="flex-1 overflow-auto">
+          {singles.length > 0 && (
+            <div
+              className="grid gap-x-6 gap-y-1 px-2 pb-4"
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+            >
+              {singles.map((key) => (
+                <KeyBadge key={key} keyName={key} prefix="" os={os} />
+              ))}
+            </div>
+          )}
 
-              if (row.type === "header") {
-                const isOpen = row.isOpen;
-                return (
-                  <div
-                    key={virtualRow.key}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <button
-                      onClick={() => toggleGroup(row.prefix)}
-                      className="flex items-center gap-2 px-2 py-2 hover:bg-accent rounded transition-colors text-left w-full"
-                    >
-                      {isOpen ? (
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      )}
-                      <span className="font-mono text-sm text-muted-foreground">
-                        {row.prefix}
-                        <span className="text-foreground font-medium">.*</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground bg-background border px-1.5 py-0.5 rounded-full">
-                        {row.keys.length}
-                      </span>
-                    </button>
-                  </div>
-                );
-              }
-
-              const isGrouped = row.type === "keys";
-              return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <div
-                    className={`grid gap-x-6 gap-y-1 pr-2 ${isGrouped ? "pl-8 pb-3" : "px-2 pb-2"}`}
-                    style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-                  >
-                    {row.keys.map((key) => (
-                      <KeyBadge key={key} keyName={key} prefix={row.prefix} os={os} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {groups.map(({ prefix, keys: groupKeys }) => (
+            <KeyGroup
+              key={prefix}
+              prefix={prefix}
+              keys={groupKeys}
+              os={os}
+              cols={cols}
+              isOpen={openGroups.has(prefix)}
+              onToggle={() => toggleGroup(prefix)}
+              isFiltering={isFiltering}
+            />
+          ))}
         </div>
       )}
     </div>
