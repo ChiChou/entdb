@@ -7,7 +7,6 @@ import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
 import { tokenizeKeys, getTopTokens } from "@/lib/tokenizer";
@@ -115,10 +114,10 @@ export default function Keys() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
           {Array.from({ length: 30 }).map((_, i) => (
-            <Skeleton
+            <div
               key={i}
-              className="h-7"
-              style={{ width: `${60 + Math.random() * 40}%` }}
+              className="h-7 bg-muted/50 rounded"
+              style={{ width: `${65 + (i * 17) % 30}%` }}
             />
           ))}
         </div>
