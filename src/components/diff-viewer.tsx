@@ -136,7 +136,9 @@ export function DiffViewer({
   oldLabel,
   newLabel,
 }: DiffViewerProps) {
-  const [viewMode, setViewMode] = useState<"unified" | "split">("split");
+  const [viewMode, setViewMode] = useState<"unified" | "split">(
+    typeof window !== "undefined" && window.innerWidth < 480 ? "unified" : "split"
+  );
 
   const keysDiff = useMemo(
     () => diffPlistKeys(oldXml, newXml),

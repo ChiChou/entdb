@@ -9,6 +9,28 @@ import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+function useColumnCount() {
+  const [cols, setCols] = useState(3);
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    const update = () => {
+      const w = window.innerWidth;
+      setCols(w < 640 ? 1 : w < 1024 ? 2 : 3);
+    };
+    const debouncedUpdate = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(update, 100);
+    };
+    update();
+    window.addEventListener("resize", debouncedUpdate);
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener("resize", debouncedUpdate);
+    };
+  }, []);
+  return cols;
+}
+
 import { createEngine } from "@/lib/engine";
 
 interface GroupedKeys {
@@ -74,7 +96,7 @@ const KeyBadge = memo(function KeyBadge({
 });
 
 interface RowItem {
-  type: "header" | "keys" | "single";
+  type: "header" | "keys" | "singles";
   prefix: string;
   keys: string[];
   isOpen: boolean;
@@ -92,6 +114,7 @@ export default function Keys() {
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
   const parentRef = useRef<HTMLDivElement>(null);
+  const cols = useColumnCount();
 
   // Debounce keyword with 300ms delay
   useEffect(() => {
@@ -130,19 +153,31 @@ export default function Keys() {
   // Build flat list of rows for virtualization
   const rows = useMemo(() => {
     const result: RowItem[] = [];
+    let pendingSingles: string[] = [];
+
+    const flushSingles = () => {
+      if (pendingSingles.length > 0) {
+        result.push({
+          type: "singles",
+          prefix: "",
+          keys: pendingSingles,
+          isOpen: true,
+        });
+        pendingSingles = [];
+      }
+    };
+
     for (const prefix of sortedPrefixes) {
       const keys = grouped[prefix];
 
-      // Single key that equals its prefix - show as simple item, not collapsible
+      // Single key that equals its prefix - batch with other singles
       if (keys.length === 1 && keys[0] === prefix) {
-        result.push({
-          type: "single",
-          prefix,
-          keys,
-          isOpen: true,
-        });
+        pendingSingles.push(keys[0]);
         continue;
       }
+
+      // Flush any pending singles before adding a group
+      flushSingles();
 
       const isOpen = openGroups.has(prefix) || keys.length <= 8 || debouncedKeyword.length > 0;
 
@@ -162,6 +197,10 @@ export default function Keys() {
         });
       }
     }
+
+    // Flush remaining singles
+    flushSingles();
+
     return result;
   }, [sortedPrefixes, grouped, openGroups, debouncedKeyword]);
 
@@ -170,11 +209,9 @@ export default function Keys() {
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => {
       const row = rows[index];
-      if (row.type === "single") return 36;
       if (row.type === "header") return 40;
-      // Estimate based on number of keys (3 columns, ~32px per row)
-      const keyRows = Math.ceil(row.keys.length / 3);
-      return keyRows * 32 + 24; // padding
+      const keyRows = Math.ceil(row.keys.length / cols);
+      return keyRows * 32 + 16;
     },
     overscan: 5,
   });
@@ -282,7 +319,10 @@ export default function Keys() {
                 />
                 <div className="h-4 w-8 bg-muted rounded-full animate-pulse ml-1" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 pl-6">
+              <div
+                className="grid gap-1.5 pl-6"
+                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              >
                 {group.items.map((width, i) => (
                   <div
                     key={i}
@@ -316,25 +356,6 @@ export default function Keys() {
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
               const row = rows[virtualRow.index];
-
-              if (row.type === "single") {
-                return (
-                  <div
-                    key={virtualRow.key}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                    className="px-2 py-1"
-                  >
-                    <KeyBadge keyName={row.keys[0]} prefix="" os={os} />
-                  </div>
-                );
-              }
 
               if (row.type === "header") {
                 const isOpen = row.isOpen;
@@ -371,6 +392,7 @@ export default function Keys() {
                 );
               }
 
+              const isGrouped = row.type === "keys";
               return (
                 <div
                   key={virtualRow.key}
@@ -382,7 +404,10 @@ export default function Keys() {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1 pl-8 pr-2 pb-3">
+                  <div
+                    className={`grid gap-x-6 gap-y-1 pr-2 ${isGrouped ? "pl-8 pb-3" : "px-2 pb-2"}`}
+                    style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+                  >
                     {row.keys.map((key) => (
                       <KeyBadge key={key} keyName={key} prefix={row.prefix} os={os} />
                     ))}
