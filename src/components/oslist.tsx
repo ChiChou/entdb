@@ -204,11 +204,17 @@ export default function OSList() {
       {loading && (
         <div className="space-y-6">
           {[1, 2, 3].map((group) => (
-            <section key={group} className="my-4">
-              <Skeleton className="h-6 w-24 mb-3" />
+            <section key={group} className="mb-6">
+              <div className="h-8 mb-4" />
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <Skeleton key={item} className="h-14" />
+                  <div key={item} className="p-3 border border-border/50 rounded-lg">
+                    <div className="h-3 w-20 bg-muted/50 rounded mb-2" />
+                    <div className="flex justify-between">
+                      <div className="h-5 w-12 bg-muted/50 rounded" />
+                      <div className="h-4 w-14 bg-muted/50 rounded" />
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>
