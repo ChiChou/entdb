@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { useQueryFilter } from "@/hooks/use-query-filter";
 import { dataURL } from "@/lib/env";
 import type { Group, OS } from "@/lib/types";
 import { HeaderPortal } from "./header-portal";
@@ -74,15 +75,7 @@ export default function OSList() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [highlights, setHighlights] = useState<Set<string>>(new Set());
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  const [keyword, setKeyword] = useState("");
-  const [debouncedKeyword, setDebouncedKeyword] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedKeyword(keyword);
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [keyword]);
+  const { keyword, setKeyword, debouncedKeyword } = useQueryFilter("q", 200);
 
   useEffect(() => {
     const set: Set<string> = new Set();

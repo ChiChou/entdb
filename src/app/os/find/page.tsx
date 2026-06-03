@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import FileSystem from "@/components/filesystem";
 import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
+import { useQueryFilter } from "@/hooks/use-query-filter";
 
 export default function FindByKey() {
   const params = useSearchParams();
@@ -29,17 +30,8 @@ export default function FindByKey() {
 
   const [loading, setLoading] = useState(true);
   const [paths, setPaths] = useState<string[]>([]);
-  const [keyword, setKeyword] = useState("");
-  const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [expandAll, setExpandAll] = useState<boolean | null>(null);
-
-  // Debounce keyword with 300ms delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedKeyword(keyword);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [keyword]);
+  const { keyword, setKeyword, debouncedKeyword } = useQueryFilter();
 
   useEffect(() => {
     async function fetchPaths() {

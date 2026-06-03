@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
 import { tokenizeKeys, getTopTokens } from "@/lib/tokenizer";
+import { useQueryFilter } from "@/hooks/use-query-filter";
 
 export default function Keys() {
   const params = useSearchParams();
@@ -18,15 +19,7 @@ export default function Keys() {
 
   const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState<string[]>([]);
-  const [keyword, setKeyword] = useState("");
-  const [debouncedKeyword, setDebouncedKeyword] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedKeyword(keyword);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [keyword]);
+  const { keyword, setKeyword, debouncedKeyword } = useQueryFilter();
 
   useEffect(() => {
     async function load() {

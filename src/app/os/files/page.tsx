@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { useDebounce } from "use-debounce";
 import { Search, X, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import FileSystem from "@/components/filesystem";
 import { HeaderPortal } from "@/components/header-portal";
 import { createEngine } from "@/lib/engine";
+import { useQueryFilter } from "@/hooks/use-query-filter";
 
 export default function Files() {
   const params = useSearchParams();
@@ -18,10 +18,9 @@ export default function Files() {
 
   const [loading, setLoading] = useState(true);
   const [files, setFiles] = useState<string[]>([]);
-  const [keyword, setKeyword] = useState("");
   const [expandAll, setExpandAll] = useState<boolean | null>(null);
 
-  const [debouncedKeyword] = useDebounce(keyword, 200);
+  const { keyword, setKeyword, debouncedKeyword } = useQueryFilter("q", 200);
 
   useEffect(() => {
     setLoading(true);
