@@ -23,11 +23,20 @@ export function useQueryFilter(param = "q", delay = 300) {
   const [debouncedKeyword] = useDebounce(keyword, delay);
 
   useEffect(() => {
-    const next = new URLSearchParams(params.toString());
+    const current = params.toString();
+    const next = new URLSearchParams(current);
     if (debouncedKeyword) {
       next.set(param, debouncedKeyword);
     } else {
       next.delete(param);
+    }
+
+    // Nothing changed — don't touch the URL. A redundant router.replace on
+    // mount triggers a host trailing-slash redirect, which Next treats as a
+    // hard navigation and remounts us, firing this effect again in a loop.
+    const query = next.toString();
+    if (query === current) {
+      return;
     }
 
     // usePathname() may include the configured basePath, which router.replace
@@ -36,7 +45,6 @@ export function useQueryFilter(param = "q", delay = 300) {
       basePath && pathname.startsWith(basePath)
         ? pathname.slice(basePath.length)
         : pathname;
-    const query = next.toString();
     router.replace(query ? `${path}?${query}` : path, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedKeyword]);
