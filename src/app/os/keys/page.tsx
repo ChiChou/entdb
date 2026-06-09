@@ -1,44 +1,386 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import {
+  ChevronDown,
+  ChevronRight,
+  CircleMinus,
+  CirclePlus,
+  GitCompare,
+  History,
+  Minus,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { HeaderPortal } from "@/components/header-portal";
-import { createEngine } from "@/lib/engine";
-import { tokenizeKeys, getTopTokens } from "@/lib/tokenizer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useQueryFilter } from "@/hooks/use-query-filter";
+import { createEngine } from "@/lib/engine";
+import { getTopTokens, tokenizeKeys } from "@/lib/tokenizer";
+import type { OS } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+function versionTag(os: OS) {
+  return `${os.version}_${os.build}`;
+}
+
+function isCurrentVersion(os: OS, build: string) {
+  return os.build === build || versionTag(os) === build;
+}
+
+function matchesVersion(os: OS, tag: string) {
+  return os.build === tag || versionTag(os) === tag;
+}
+
+function compareOSVersion(a: OS, b: OS) {
+  const vA = a.version.split(".").map(Number);
+  const vB = b.version.split(".").map(Number);
+  for (let i = 0; i < Math.max(vA.length, vB.length); i++) {
+    const diff = (vB[i] || 0) - (vA[i] || 0);
+    if (diff !== 0) return diff;
+  }
+
+  return b.build.localeCompare(a.build);
+}
+
+const keySkeletons = Array.from(
+  { length: 30 },
+  (_, index) => `key-skeleton-${index}`,
+);
+
+type DisplayedKey = {
+  key: string;
+  os: string;
+  status: "current" | "added" | "removed";
+};
+
+type VersionHistoryPanelProps = {
+  activeCompareTag: string | null;
+  build: string;
+  className?: string;
+  compareWith: string | null;
+  group: string;
+  groupedVersions: Array<[string, OS[]]>;
+  listClassName?: string;
+  setCompareWith: (value: string | null) => void;
+  switchVersion: (version: OS) => void;
+  versionsCount: number;
+};
+
+function KeyLink({ entry }: { entry: DisplayedKey }) {
+  const isNew = entry.status === "added";
+  const isRemoved = entry.status === "removed";
+
+  return (
+    <Link
+      key={`${entry.status}:${entry.key}`}
+      href={`/os/find?key=${encodeURIComponent(
+        entry.key,
+      )}&os=${encodeURIComponent(entry.os)}`}
+      className={cn(
+        "group flex min-w-0 items-center gap-2 rounded-md px-1 py-1 font-mono text-sm transition-colors",
+        isNew
+          ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
+          : isRemoved
+            ? "bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+      )}
+      title={entry.key}
+    >
+      {(isNew || isRemoved) && (
+        <span
+          aria-label={isRemoved ? "Removed" : "New"}
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+            isRemoved
+              ? "border-red-300/70 text-red-700 dark:border-red-700 dark:text-red-300"
+              : "border-emerald-300/70 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300",
+          )}
+          title={isRemoved ? "Removed" : "New"}
+        >
+          {isRemoved ? (
+            <Minus className="h-3 w-3" aria-hidden="true" />
+          ) : (
+            <Plus className="h-3 w-3" aria-hidden="true" />
+          )}
+        </span>
+      )}
+      <span className="truncate">{entry.key}</span>
+    </Link>
+  );
+}
+
+function VersionHistoryPanel({
+  activeCompareTag,
+  build,
+  className,
+  compareWith,
+  group,
+  groupedVersions,
+  listClassName,
+  setCompareWith,
+  switchVersion,
+  versionsCount,
+}: VersionHistoryPanelProps) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-md border bg-muted/20 p-3",
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          Version History
+        </h2>
+        <span className="text-xs text-muted-foreground">{versionsCount}</span>
+      </div>
+
+      <div className={cn("mt-3 space-y-1", listClassName)}>
+        {groupedVersions.map(([major, groupVersions]) => (
+          <details
+            key={major}
+            open={groupVersions.some(
+              (version) =>
+                isCurrentVersion(version, build) ||
+                (activeCompareTag && matchesVersion(version, activeCompareTag)),
+            )}
+            className="group"
+          >
+            <summary className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90" />
+              <span className="flex-1">
+                {group} {major}.x
+              </span>
+              <span className="inline-flex min-w-5 justify-center rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                {groupVersions.length}
+              </span>
+            </summary>
+
+            <div className="ml-3 mt-1 space-y-0.5 border-l border-border pl-3">
+              {groupVersions.map((version) => {
+                const tag = versionTag(version);
+                const isCurrent = isCurrentVersion(version, build);
+                const isComparing = activeCompareTag
+                  ? matchesVersion(version, activeCompareTag)
+                  : false;
+
+                return (
+                  <div
+                    key={tag}
+                    className={cn(
+                      "flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors",
+                      isCurrent
+                        ? "bg-primary text-primary-foreground"
+                        : isComparing
+                          ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                          : "hover:bg-accent",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => !isCurrent && switchVersion(version)}
+                      disabled={isCurrent}
+                      className={cn(
+                        "min-w-0 flex-1 text-left",
+                        isCurrent
+                          ? "font-medium"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <span className="block truncate font-mono">
+                        {version.version}
+                      </span>
+                      <span
+                        className={cn(
+                          "block truncate text-xs",
+                          isCurrent
+                            ? "text-primary-foreground/70"
+                            : "text-muted-foreground/70",
+                        )}
+                      >
+                        {version.build}
+                      </span>
+                    </button>
+
+                    {!isCurrent && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCompareWith(
+                            isComparing && compareWith ? null : tag,
+                          )
+                        }
+                        className={cn(
+                          "rounded-md p-1 transition-colors",
+                          isComparing
+                            ? "text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                        )}
+                        title={
+                          isComparing
+                            ? "Close diff"
+                            : `Compare with ${version.version}`
+                        }
+                      >
+                        <GitCompare className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Keys() {
   const params = useSearchParams();
+  const router = useRouter();
   const os = params.get("os") as string;
   const [group, build] = os ? os.split("/") : ["", ""];
 
   const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState<string[]>([]);
+  const [versions, setVersions] = useState<OS[]>([]);
+  const [compareKeys, setCompareKeys] = useState<string[] | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState(false);
+  const [changesExpanded, setChangesExpanded] = useState(false);
   const { keyword, setKeyword, debouncedKeyword } = useQueryFilter();
 
+  const compareWith = params.get("diff");
+
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
+      if (!group || !build) {
+        setKeys([]);
+        setVersions([]);
+        return;
+      }
+
       const engine = await createEngine(group);
-      const allKeys = await engine.getKeys(build);
+      const [allKeys, osList] = await Promise.all([
+        engine.getKeys(build),
+        engine.listOS().catch(() => [] as OS[]),
+      ]);
       allKeys.sort((a, b) => a.localeCompare(b));
-      setKeys(allKeys);
+      osList.sort(compareOSVersion);
+
+      if (!cancelled) {
+        setKeys(allKeys);
+        setVersions(osList);
+      }
     }
 
     setLoading(true);
-    load().finally(() => setLoading(false));
+    load()
+      .catch(() => {
+        if (!cancelled) {
+          setKeys([]);
+          setVersions([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [group, build]);
+
+  const currentVersionIndex = useMemo(
+    () => versions.findIndex((version) => isCurrentVersion(version, build)),
+    [build, versions],
+  );
+
+  const currentVersion =
+    currentVersionIndex === -1 ? undefined : versions[currentVersionIndex];
+
+  const explicitCompareVersion = compareWith
+    ? versions.find((version) => matchesVersion(version, compareWith))
+    : undefined;
+
+  const compareVersion = explicitCompareVersion;
+
+  const compareTag = compareWith;
+  const currentTag = currentVersion ? versionTag(currentVersion) : build;
+  const activeCompareTag =
+    compareTag &&
+    compareTag !== build &&
+    compareTag !== currentTag &&
+    compareTag !== currentVersion?.build
+      ? compareTag
+      : null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!group || !activeCompareTag) {
+      setCompareKeys(null);
+      setCompareLoading(false);
+      setCompareError(false);
+      setChangesExpanded(false);
+      return;
+    }
+
+    async function loadCompareKeys() {
+      const engine = await createEngine(group);
+      const baseKeys = await engine.getKeys(activeCompareTag!);
+      baseKeys.sort((a, b) => a.localeCompare(b));
+
+      if (!cancelled) {
+        setCompareKeys(baseKeys);
+        setCompareError(false);
+      }
+    }
+
+    setCompareKeys(null);
+    setCompareLoading(true);
+    setCompareError(false);
+    loadCompareKeys()
+      .catch(() => {
+        if (!cancelled) {
+          setCompareKeys([]);
+          setCompareError(true);
+          setChangesExpanded(false);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCompareLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [group, activeCompareTag]);
 
   const filtered = useMemo(
     () =>
       keys.filter((key) =>
-        key.toLowerCase().includes(debouncedKeyword.toLowerCase())
+        key.toLowerCase().includes(debouncedKeyword.toLowerCase()),
       ),
-    [debouncedKeyword, keys]
+    [debouncedKeyword, keys],
   );
 
   const topTokens = useMemo(() => {
