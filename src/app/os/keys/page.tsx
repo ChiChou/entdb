@@ -389,7 +389,98 @@ export default function Keys() {
     return getTopTokens(freq, 15, 10);
   }, [keys]);
 
+  const diffReady =
+    Boolean(activeCompareTag) &&
+    compareKeys !== null &&
+    !compareLoading &&
+    !compareError;
+
+  const compareKeySet = useMemo(
+    () => new Set(compareKeys ?? []),
+    [compareKeys],
+  );
+
+  const currentKeySet = useMemo(() => new Set(keys), [keys]);
+
+  const addedKeys = useMemo(
+    () => (diffReady ? keys.filter((key) => !compareKeySet.has(key)) : []),
+    [compareKeySet, diffReady, keys],
+  );
+
+  const removedKeys = useMemo(
+    () =>
+      diffReady
+        ? (compareKeys ?? []).filter((key) => !currentKeySet.has(key))
+        : [],
+    [compareKeys, currentKeySet, diffReady],
+  );
+
+  const addedKeySet = useMemo(() => new Set(addedKeys), [addedKeys]);
+
+  const compareOs = activeCompareTag
+    ? `${group}/${compareVersion ? versionTag(compareVersion) : activeCompareTag}`
+    : os;
+
+  const changedKeyCount = addedKeys.length + removedKeys.length;
+
+  const changedKeys = useMemo<DisplayedKey[]>(() => {
+    if (!diffReady) return [];
+
+    const loweredKeyword = debouncedKeyword.toLowerCase();
+
+    return [
+      ...addedKeys.map((key) => ({ key, os, status: "added" as const })),
+      ...removedKeys.map((key) => ({
+        key,
+        os: compareOs,
+        status: "removed" as const,
+      })),
+    ]
+      .filter((entry) => entry.key.toLowerCase().includes(loweredKeyword))
+      .sort(
+        (a, b) =>
+          a.key.localeCompare(b.key) || a.status.localeCompare(b.status),
+      );
+  }, [addedKeys, compareOs, debouncedKeyword, diffReady, os, removedKeys]);
+
+  const displayedKeys = useMemo<DisplayedKey[]>(
+    () =>
+      filtered.map((key) => ({
+        key,
+        os,
+        status: diffReady && addedKeySet.has(key) ? "added" : "current",
+      })),
+    [addedKeySet, diffReady, filtered, os],
+  );
+
   const isFiltering = debouncedKeyword.length > 0;
+
+  const setCompareWith = (value: string | null) => {
+    const newParams = new URLSearchParams(params.toString());
+    if (value) {
+      newParams.set("diff", value);
+    } else {
+      newParams.delete("diff");
+    }
+    router.replace(`/os/keys?${newParams.toString()}`, { scroll: false });
+  };
+
+  const switchVersion = (version: OS) => {
+    const newParams = new URLSearchParams(params.toString());
+    newParams.set("os", `${group}/${versionTag(version)}`);
+    newParams.delete("diff");
+    router.push(`/os/keys?${newParams.toString()}`);
+  };
+
+  const groupedVersions = useMemo(() => {
+    const groups: Record<string, OS[]> = {};
+    for (const version of versions) {
+      const major = version.version.split(".")[0];
+      groups[major] ??= [];
+      groups[major].push(version);
+    }
+    return Object.entries(groups).sort(([a], [b]) => Number(b) - Number(a));
+  }, [versions]);
 
   const filterControls = (
     <div className="relative flex-1 sm:flex-none sm:w-96">
