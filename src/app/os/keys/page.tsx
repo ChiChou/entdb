@@ -509,68 +509,206 @@ export default function Keys() {
     <div className="flex flex-col h-full">
       <HeaderPortal>{filterControls}</HeaderPortal>
 
-      {!loading && (
-        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-sm text-muted-foreground">
-            {isFiltering ? (
-              <>
-                {filtered.length} of {keys.length} keys
-              </>
-            ) : (
-              <>{keys.length} entitlement keys</>
-            )}
-          </span>
-          {topTokens.length > 0 && !isFiltering && (
-            <div className="flex flex-wrap gap-1">
-              {topTokens.map(({ token }) => (
-                <button
-                  key={token}
-                  type="button"
-                  onClick={() => setKeyword(token)}
-                  className="px-2 py-0.5 text-xs rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {token}
-                </button>
-              ))}
+      <div className="flex flex-1 min-h-0 flex-col gap-5 lg:flex-row">
+        <main className="flex min-w-0 flex-1 flex-col">
+          {!loading && (
+            <div className="mb-3 flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="text-sm text-muted-foreground">
+                  {isFiltering ? (
+                    <>
+                      {filtered.length} of {keys.length} keys
+                    </>
+                  ) : (
+                    <>{keys.length} entitlement keys</>
+                  )}
+                </span>
+
+                {compareLoading && activeCompareTag && (
+                  <span className="text-sm text-muted-foreground">
+                    Diffing keys...
+                  </span>
+                )}
+
+                {compareError && activeCompareTag && (
+                  <span className="text-sm text-destructive">
+                    Diff unavailable
+                  </span>
+                )}
+
+                {versions.length > 1 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 px-2 text-xs lg:hidden"
+                      >
+                        <History className="h-3.5 w-3.5" />
+                        Versions
+                        <span className="inline-flex min-w-5 justify-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          {versions.length}
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      className="w-[min(calc(100vw-2rem),34rem)] p-3 lg:hidden"
+                      sideOffset={8}
+                    >
+                      <VersionHistoryPanel
+                        activeCompareTag={activeCompareTag}
+                        build={build}
+                        className="border-0 bg-transparent p-0"
+                        compareWith={compareWith}
+                        group={group}
+                        groupedVersions={groupedVersions}
+                        listClassName="max-h-[min(65vh,36rem)] overflow-y-auto pr-1"
+                        setCompareWith={setCompareWith}
+                        switchVersion={switchVersion}
+                        versionsCount={versions.length}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+
+                {diffReady && (
+                  <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-sm">
+                    <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+                      <CirclePlus className="h-3.5 w-3.5" />
+                      {addedKeys.length} new
+                    </span>
+                    {removedKeys.length > 0 && (
+                      <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300">
+                        <CircleMinus className="h-3.5 w-3.5" />
+                        {removedKeys.length} removed
+                      </span>
+                    )}
+                    {changedKeyCount > 0 && (
+                      <Button
+                        type="button"
+                        variant={changesExpanded ? "secondary" : "outline"}
+                        size="icon"
+                        onClick={() => setChangesExpanded((value) => !value)}
+                        className="h-7 w-7"
+                        aria-expanded={changesExpanded}
+                        aria-label={
+                          changesExpanded
+                            ? "Collapse changed keys"
+                            : "Expand changed keys"
+                        }
+                        title={
+                          changesExpanded
+                            ? "Collapse changed keys"
+                            : "Expand changed keys"
+                        }
+                      >
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform",
+                            changesExpanded && "rotate-180",
+                          )}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {topTokens.length > 0 && !isFiltering && (
+                <div className="flex flex-wrap gap-1">
+                  {topTokens.map(({ token }) => (
+                    <button
+                      key={token}
+                      type="button"
+                      onClick={() => setKeyword(token)}
+                      className="px-2 py-0.5 text-xs rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {token}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {changesExpanded && diffReady && (
+                <div className="rounded-md border bg-muted/20 p-2">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {changedKeys.length} of {changedKeyCount} changed keys
+                    </span>
+                    {isFiltering && (
+                      <span>Filtered by &quot;{debouncedKeyword}&quot;</span>
+                    )}
+                  </div>
+
+                  {changedKeys.length === 0 ? (
+                    <div className="py-3 text-center text-sm text-muted-foreground">
+                      No changed keys match &quot;{keyword}&quot;
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
+                      {changedKeys.map((entry) => (
+                        <KeyLink
+                          key={`${entry.status}:${entry.key}`}
+                          entry={entry}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-7 bg-muted/50 rounded"
-              style={{ width: `${65 + (i * 17) % 30}%` }}
-            />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {keys.length === 0 ? (
-            <p>No entitlement keys found for this OS version.</p>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-1">
+              {keySkeletons.map((skeleton, i) => (
+                <div
+                  key={skeleton}
+                  className="h-7 bg-muted/50 rounded"
+                  style={{ width: `${65 + ((i * 17) % 30)}%` }}
+                />
+              ))}
+            </div>
+          ) : displayedKeys.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {keys.length === 0 ? (
+                <p>No entitlement keys found for this OS version.</p>
+              ) : (
+                <p>No keys match &quot;{keyword}&quot;</p>
+              )}
+            </div>
           ) : (
-            <p>No keys match &quot;{keyword}&quot;</p>
+            <div className="flex-1 min-h-0 overflow-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1">
+                {displayedKeys.map((entry) => (
+                  <KeyLink key={`${entry.status}:${entry.key}`} entry={entry} />
+                ))}
+              </div>
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="flex-1 overflow-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
-            {filtered.map((key) => (
-              <Link
-                key={key}
-                href={`/os/find?key=${encodeURIComponent(key)}&os=${os}`}
-                className="block py-1 font-mono text-sm text-muted-foreground hover:text-foreground transition-colors truncate"
-                title={key}
-              >
-                {key}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+        </main>
+
+        {versions.length > 1 && (
+          <aside className="hidden shrink-0 lg:block lg:w-72">
+            <div className="space-y-4 lg:sticky lg:top-24">
+              <VersionHistoryPanel
+                activeCompareTag={activeCompareTag}
+                build={build}
+                className="max-h-[calc(100vh-7rem)]"
+                compareWith={compareWith}
+                group={group}
+                groupedVersions={groupedVersions}
+                listClassName="min-h-0 flex-1 overflow-y-auto pr-1"
+                setCompareWith={setCompareWith}
+                switchVersion={switchVersion}
+                versionsCount={versions.length}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
