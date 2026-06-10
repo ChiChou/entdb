@@ -13,6 +13,7 @@ import { ChevronDown, Check } from "lucide-react";
 
 import type { OS } from "@/lib/types";
 import { withBase, basePath, dataURL } from "@/lib/env";
+import { BetaBadge } from "@/components/beta-badge";
 
 function compareVersion(a: string, b: string) {
   const l1 = a.split(".").map(Number);
@@ -83,11 +84,12 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
           {loading ? (
             "Loading..."
           ) : currentVersion ? (
-            <span>
+            <span className="flex items-center gap-1.5">
               {currentVersion.version}{" "}
               <span className="text-muted-foreground text-xs">
                 ({currentVersion.build})
               </span>
+              {currentVersion.beta && <BetaBadge />}
             </span>
           ) : (
             currentBuild
@@ -123,11 +125,12 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
                   isSelected ? "bg-accent" : ""
                 }`}
               >
-                <span className="font-mono">
+                <span className="font-mono flex items-center gap-1.5">
                   {os.version}{" "}
                   <span className="text-muted-foreground text-xs">
                     ({os.build})
                   </span>
+                  {os.beta && <BetaBadge />}
                 </span>
                 {isSelected && <Check className="h-4 w-4" />}
               </button>

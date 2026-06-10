@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryFilter } from "@/hooks/use-query-filter";
 import { dataURL } from "@/lib/env";
 import type { Group, OS } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { BetaBadge } from "./beta-badge";
 import { HeaderPortal } from "./header-portal";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -309,13 +311,21 @@ export default function OSList() {
                         >
                           <Link
                             href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                            className="block p-3 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
+                            className={cn(
+                              "block p-3 border rounded-lg transition-colors hover:bg-accent/50",
+                              os.beta
+                                ? "border-amber-400/50 hover:border-amber-500/70 dark:border-amber-500/40"
+                                : "border-border hover:border-foreground/20",
+                            )}
                           >
                             <div className="text-xs text-muted-foreground mb-1 truncate">
                               {os.name}
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{os.version}</span>
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="font-medium flex items-center gap-1.5">
+                                {os.version}
+                                {os.beta && <BetaBadge />}
+                              </span>
                               <span className="text-xs text-muted-foreground font-mono">
                                 {os.build}
                               </span>
@@ -339,14 +349,20 @@ export default function OSList() {
                             >
                               <Link
                                 href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
-                                className="block p-3 border border-border rounded-lg hover:border-foreground/20 transition-colors hover:bg-accent/50"
+                                className={cn(
+                                  "block p-3 border rounded-lg transition-colors hover:bg-accent/50",
+                                  os.beta
+                                    ? "border-amber-400/50 hover:border-amber-500/70 dark:border-amber-500/40"
+                                    : "border-border hover:border-foreground/20",
+                                )}
                               >
                                 <div className="text-xs text-muted-foreground mb-1 truncate">
                                   {os.name}
                                 </div>
-                                <div className="flex justify-between items-center">
-                                  <span className="font-medium">
+                                <div className="flex justify-between items-center gap-2">
+                                  <span className="font-medium flex items-center gap-1.5">
                                     {os.version}
+                                    {os.beta && <BetaBadge />}
                                   </span>
                                   <span className="text-xs text-muted-foreground font-mono">
                                     {os.build}

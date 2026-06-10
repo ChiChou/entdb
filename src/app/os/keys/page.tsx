@@ -29,6 +29,7 @@ import { createEngine } from "@/lib/engine";
 import { getTopTokens, tokenizeKeys } from "@/lib/tokenizer";
 import type { OS } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { BetaBadge } from "@/components/beta-badge";
 
 function versionTag(os: OS) {
   return `${os.version}_${os.build}`;
@@ -198,8 +199,9 @@ function VersionHistoryPanel({
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      <span className="block truncate font-mono">
+                      <span className="flex items-center gap-1.5 truncate font-mono">
                         {version.version}
+                        {version.beta && <BetaBadge />}
                       </span>
                       <span
                         className={cn(

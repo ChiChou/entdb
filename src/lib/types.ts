@@ -3,6 +3,7 @@ export interface OS {
   build: string;
   version: string;
   devices: string[];
+  beta?: boolean;
 }
 
 export interface Group {
