@@ -141,11 +141,9 @@ export function KeyLabel({
 /** Insert soft break opportunities after separators. */
 function withBreaks(text: string) {
   const parts = text.split(/(?<=[.\-_])/);
-  return parts.map((part, i) => (
+  // Plain text nodes with <wbr> between them: no wrapper element per segment.
+  return parts.flatMap((part, i) =>
     // biome-ignore lint/suspicious/noArrayIndexKey: static split of a string
-    <span key={i}>
-      {part}
-      {i < parts.length - 1 && <wbr />}
-    </span>
-  ));
+    i === 0 ? [part] : [<wbr key={i} />, part],
+  );
 }

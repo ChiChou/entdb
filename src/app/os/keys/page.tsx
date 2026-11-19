@@ -15,7 +15,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { BetaBadge } from "@/components/beta-badge";
 import { HeaderPortal } from "@/components/header-portal";
-import { type DisplayedKey, KeyLink } from "@/components/key-link";
+import type { DisplayedKey } from "@/components/key-link";
+import { KeyList } from "@/components/key-list";
 import { NamespaceTree } from "@/components/key-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -757,16 +758,7 @@ export default function Keys() {
                   </span>
                 </div>
 
-                {/* Column-major flow so an alphabetical list reads top to bottom;
-                    columns stay wide enough for most full keys on one line. */}
-                <div className="columns-[26rem] gap-x-4">
-                  {namespaceKeys.map((entry) => (
-                    <KeyLink
-                      key={`${entry.status}:${entry.key}`}
-                      entry={entry}
-                    />
-                  ))}
-                </div>
+                <KeyList entries={namespaceKeys} />
               </section>
             </div>
           )}
