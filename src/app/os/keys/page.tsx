@@ -7,16 +7,16 @@ import {
   CirclePlus,
   GitCompare,
   History,
-  Minus,
-  Plus,
   Search,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { BetaBadge } from "@/components/beta-badge";
 import { HeaderPortal } from "@/components/header-portal";
+import { type DisplayedKey, KeyLink } from "@/components/key-link";
+import { NamespaceTree } from "@/components/key-tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,10 +26,17 @@ import {
 } from "@/components/ui/popover";
 import { useQueryFilter } from "@/hooks/use-query-filter";
 import { createEngine } from "@/lib/engine";
+import {
+  type NamespaceNode,
+  allNamespaces,
+  buildNamespaceTree,
+  findNamespace,
+  inNamespace,
+  namespacePath,
+} from "@/lib/key-tree";
 import { getTopTokens, tokenizeKeys } from "@/lib/tokenizer";
 import type { OS } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { BetaBadge } from "@/components/beta-badge";
 
 function versionTag(os: OS) {
   return `${os.version}_${os.build}`;
@@ -54,16 +61,35 @@ function compareOSVersion(a: OS, b: OS) {
   return b.build.localeCompare(a.build);
 }
 
+/** Open every namespace when a filtered result is this small. */
+const AUTO_EXPAND_LIMIT = 300;
+
+/**
+ * Namespaces open by default: the "dominant" chain (a namespace holding most
+ * of its parent's keys, such as `com.apple`) and the path to the selection.
+ */
+function defaultOpenNamespaces(
+  tree: NamespaceNode,
+  selected: string,
+  filtering: boolean,
+) {
+  if (filtering && tree.count <= AUTO_EXPAND_LIMIT) {
+    return new Set(allNamespaces(tree));
+  }
+  const open = new Set(namespacePath(tree, selected).map((node) => node.ns));
+  let node: NamespaceNode | undefined = tree;
+  while (node) {
+    const parentCount: number = node.count;
+    node = node.children.find((child) => child.count > parentCount / 2);
+    if (node) open.add(node.ns);
+  }
+  return open;
+}
+
 const keySkeletons = Array.from(
   { length: 30 },
   (_, index) => `key-skeleton-${index}`,
 );
-
-type DisplayedKey = {
-  key: string;
-  os: string;
-  status: "current" | "added" | "removed";
-};
 
 type VersionHistoryPanelProps = {
   activeCompareTag: string | null;
@@ -77,49 +103,6 @@ type VersionHistoryPanelProps = {
   switchVersion: (version: OS) => void;
   versionsCount: number;
 };
-
-function KeyLink({ entry }: { entry: DisplayedKey }) {
-  const isNew = entry.status === "added";
-  const isRemoved = entry.status === "removed";
-
-  return (
-    <Link
-      key={`${entry.status}:${entry.key}`}
-      href={`/os/find?key=${encodeURIComponent(
-        entry.key,
-      )}&os=${encodeURIComponent(entry.os)}`}
-      className={cn(
-        "group flex min-w-0 items-center gap-2 rounded-md px-1 py-1 font-mono text-sm transition-colors",
-        isNew
-          ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
-          : isRemoved
-            ? "bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
-            : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-      )}
-      title={entry.key}
-    >
-      {(isNew || isRemoved) && (
-        <span
-          aria-label={isRemoved ? "Removed" : "New"}
-          className={cn(
-            "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-            isRemoved
-              ? "border-red-300/70 text-red-700 dark:border-red-700 dark:text-red-300"
-              : "border-emerald-300/70 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300",
-          )}
-          title={isRemoved ? "Removed" : "New"}
-        >
-          {isRemoved ? (
-            <Minus className="h-3 w-3" aria-hidden="true" />
-          ) : (
-            <Plus className="h-3 w-3" aria-hidden="true" />
-          )}
-        </span>
-      )}
-      <span className="truncate">{entry.key}</span>
-    </Link>
-  );
-}
 
 function VersionHistoryPanel({
   activeCompareTag,
@@ -457,6 +440,50 @@ export default function Keys() {
 
   const isFiltering = debouncedKeyword.length > 0;
 
+  const keyTree = useMemo(
+    () =>
+      buildNamespaceTree(filtered, {
+        isMarked: diffReady ? (key) => addedKeySet.has(key) : undefined,
+      }),
+    [addedKeySet, diffReady, filtered],
+  );
+
+  // Selection lives in `?ns=` so it survives reloads and can be shared. It is
+  // written with history.replaceState (which Next.js syncs into
+  // useSearchParams) to keep arrow-key navigation cheap.
+  const [selectedNs, setSelectedNs] = useState(() => params.get("ns") ?? "");
+  const selectNamespace = useCallback((ns: string) => {
+    setSelectedNs(ns);
+    const next = new URLSearchParams(window.location.search);
+    if (ns) next.set("ns", ns);
+    else next.delete("ns");
+    window.history.replaceState(null, "", `?${next.toString()}`);
+  }, []);
+  // A namespace with no (matching) keys falls back to all keys.
+  const activeNs = findNamespace(keyTree, selectedNs) ? selectedNs : "";
+  const activePath = namespacePath(keyTree, activeNs);
+
+  // Explicit open/closed choices override the defaults.
+  const [openOverrides, setOpenOverrides] = useState<Map<string, boolean>>(
+    () => new Map(),
+  );
+  const defaultOpen = useMemo(
+    () => defaultOpenNamespaces(keyTree, activeNs, isFiltering),
+    [activeNs, isFiltering, keyTree],
+  );
+  const isNamespaceOpen = useCallback(
+    (ns: string) => openOverrides.get(ns) ?? defaultOpen.has(ns),
+    [defaultOpen, openOverrides],
+  );
+  const setNamespaceOpen = useCallback((ns: string, open: boolean) => {
+    setOpenOverrides((prev) => new Map(prev).set(ns, open));
+  }, []);
+
+  const namespaceKeys = useMemo(
+    () => displayedKeys.filter((entry) => inNamespace(entry.key, activeNs)),
+    [activeNs, displayedKeys],
+  );
+
   const setCompareWith = (value: string | null) => {
     const newParams = new URLSearchParams(params.toString());
     if (value) {
@@ -682,12 +709,60 @@ export default function Keys() {
               )}
             </div>
           ) : (
-            <div className="flex-1 min-h-0 overflow-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-1">
-                {displayedKeys.map((entry) => (
-                  <KeyLink key={`${entry.status}:${entry.key}`} entry={entry} />
-                ))}
-              </div>
+            <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
+              <nav className="shrink-0 overflow-y-auto rounded-md border p-1 max-md:max-h-56 md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:w-64 md:self-start">
+                <NamespaceTree
+                  tree={keyTree}
+                  selected={activeNs}
+                  onSelect={selectNamespace}
+                  isOpen={isNamespaceOpen}
+                  onOpenChange={setNamespaceOpen}
+                />
+              </nav>
+
+              <section className="min-w-0 flex-1">
+                <div className="mb-2 flex flex-wrap items-center gap-x-1 gap-y-0.5 font-mono text-sm">
+                  {activePath.map((node, i) => {
+                    const last = i === activePath.length - 1;
+                    return (
+                      <span
+                        key={node.ns || "(all)"}
+                        className="flex items-center gap-1"
+                      >
+                        {i > 0 && (
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => selectNamespace(node.ns)}
+                          disabled={last}
+                          className={cn(
+                            "rounded px-1 transition-colors",
+                            last
+                              ? "font-medium text-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                            i === 0 && "font-sans",
+                          )}
+                        >
+                          {i === 0 ? "All keys" : node.label}
+                        </button>
+                      </span>
+                    );
+                  })}
+                  <span className="ml-1 text-xs tabular-nums text-muted-foreground">
+                    {namespaceKeys.length}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2 2xl:grid-cols-3">
+                  {namespaceKeys.map((entry) => (
+                    <KeyLink
+                      key={`${entry.status}:${entry.key}`}
+                      entry={entry}
+                    />
+                  ))}
+                </div>
+              </section>
             </div>
           )}
         </main>
