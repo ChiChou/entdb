@@ -2,19 +2,45 @@
 
 import { Check, Copy, Minus, Plus } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
+import { basePath } from "@/lib/env";
+import {
+  KEY_TRANSITION_NAME,
+  canAnimateNavigation,
+  navigateWithTransition,
+  rememberKeysPage,
+} from "@/lib/key-navigation";
 import { cn } from "@/lib/utils";
+
+/** router.push() adds basePath itself, so store paths without it. */
+function withoutBasePath(path: string) {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length)
+    : path;
+}
 
 export type DisplayedKey = {
   key: string;
   os: string;
   status: "current" | "added" | "removed";
+  /** Version being compared against, carried over to the find page. */
+  diff?: string;
 };
+
+function findHref(entry: DisplayedKey) {
+  const query = new URLSearchParams({ key: entry.key, os: entry.os });
+  if (entry.diff) query.set("diff", entry.diff);
+  return `/os/find?${query.toString()}`;
+}
 
 export function KeyLink({ entry }: { entry: DisplayedKey }) {
   const isNew = entry.status === "added";
   const isRemoved = entry.status === "removed";
+  const router = useRouter();
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const href = findHref(entry);
 
   return (
     <div
@@ -28,9 +54,23 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
       )}
     >
       <Link
-        href={`/os/find?key=${encodeURIComponent(
-          entry.key,
-        )}&os=${encodeURIComponent(entry.os)}`}
+        href={href}
+        onClick={(event) => {
+          // Remember exactly where we were, for the find page's back link.
+          rememberKeysPage({
+            url:
+              withoutBasePath(window.location.pathname) +
+              window.location.search,
+            key: entry.key,
+            os: entry.os,
+            scrollY: window.scrollY,
+          });
+          if (!canAnimateNavigation(event) || !labelRef.current) return;
+          // Morph this key name into the find page title.
+          event.preventDefault();
+          labelRef.current.style.viewTransitionName = KEY_TRANSITION_NAME;
+          navigateWithTransition(() => router.push(href), "[data-key-title]");
+        }}
         className="flex min-w-0 items-start gap-2 rounded-md py-1 pl-1 pr-7 font-mono text-sm leading-5"
         title={entry.key}
         onKeyDown={(event) => {
@@ -63,7 +103,9 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
             )}
           </span>
         )}
-        <KeyLabel text={entry.key} />
+        <span ref={labelRef} className="min-w-0">
+          <KeyLabel text={entry.key} />
+        </span>
       </Link>
       <CopyKey text={entry.key} />
     </div>

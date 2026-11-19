@@ -27,6 +27,8 @@ import {
 } from "@/components/ui/popover";
 import { useQueryFilter } from "@/hooks/use-query-filter";
 import { createEngine } from "@/lib/engine";
+import { basePath } from "@/lib/env";
+import { takeScrollRestore } from "@/lib/key-navigation";
 import {
   type NamespaceNode,
   allNamespaces,
@@ -35,30 +37,18 @@ import {
   inNamespace,
   namespacePath,
 } from "@/lib/key-tree";
+import { compareOSVersion, matchesVersion, versionTag } from "@/lib/os-version";
 import type { OS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function versionTag(os: OS) {
-  return `${os.version}_${os.build}`;
-}
-
 function isCurrentVersion(os: OS, build: string) {
-  return os.build === build || versionTag(os) === build;
+  return matchesVersion(os, build);
 }
 
-function matchesVersion(os: OS, tag: string) {
-  return os.build === tag || versionTag(os) === tag;
-}
-
-function compareOSVersion(a: OS, b: OS) {
-  const vA = a.version.split(".").map(Number);
-  const vB = b.version.split(".").map(Number);
-  for (let i = 0; i < Math.max(vA.length, vB.length); i++) {
-    const diff = (vB[i] || 0) - (vA[i] || 0);
-    if (diff !== 0) return diff;
-  }
-
-  return b.build.localeCompare(a.build);
+function withoutBasePath(path: string) {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length)
+    : path;
 }
 
 /** Open every namespace when a filtered result is this small. */
@@ -407,7 +397,12 @@ export default function Keys() {
     const loweredKeyword = debouncedKeyword.toLowerCase();
 
     return [
-      ...addedKeys.map((key) => ({ key, os, status: "added" as const })),
+      ...addedKeys.map((key) => ({
+        key,
+        os,
+        status: "added" as const,
+        diff: activeCompareTag ?? undefined,
+      })),
       ...removedKeys.map((key) => ({
         key,
         os: compareOs,
@@ -419,7 +414,15 @@ export default function Keys() {
         (a, b) =>
           a.key.localeCompare(b.key) || a.status.localeCompare(b.status),
       );
-  }, [addedKeys, compareOs, debouncedKeyword, diffReady, os, removedKeys]);
+  }, [
+    activeCompareTag,
+    addedKeys,
+    compareOs,
+    debouncedKeyword,
+    diffReady,
+    os,
+    removedKeys,
+  ]);
 
   const displayedKeys = useMemo<DisplayedKey[]>(
     () =>
@@ -427,8 +430,10 @@ export default function Keys() {
         key,
         os,
         status: diffReady && addedKeySet.has(key) ? "added" : "current",
+        // Open the find page comparing against the same version.
+        diff: diffReady ? (activeCompareTag ?? undefined) : undefined,
       })),
-    [addedKeySet, diffReady, filtered, os],
+    [activeCompareTag, addedKeySet, diffReady, filtered, os],
   );
 
   const isFiltering = debouncedKeyword.length > 0;
@@ -522,7 +527,17 @@ export default function Keys() {
     return Object.entries(groups).sort(([a], [b]) => Number(b) - Number(a));
   }, [versions]);
 
-  // "/" focuses the filter from anywhere on the page, as on GitHub.
+  // Returning from a key's find page: restore the scroll position once the
+  // keys have rendered (browser restoration ran against the skeleton).
+  useEffect(() => {
+    if (loading) return;
+    const y = takeScrollRestore(
+      withoutBasePath(window.location.pathname) + window.location.search,
+    );
+    if (y !== null) requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [loading]);
+
+  // "/" focuses the filter from anywhere on the page.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
