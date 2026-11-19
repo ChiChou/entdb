@@ -55,6 +55,7 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
     >
       <Link
         href={href}
+        data-nav-item
         onClick={(event) => {
           // Remember exactly where we were, for the find page's back link.
           rememberKeysPage({

@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import { Folder, Key, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Key, Folder } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { VersionSwitcher } from "./version-switcher";
+import { useEffect, useState } from "react";
 import { HEADER_PORTAL_ID, HEADER_PORTAL_LEFT_ID } from "./header-portal";
+import { KeyboardShortcuts } from "./keyboard-shortcuts";
+import { VersionSwitcher } from "./version-switcher";
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -35,13 +36,18 @@ function ThemeToggle() {
   );
 }
 
-function OSBreadcrumb({ os, currentPage }: { os: string; currentPage: string }) {
+function OSBreadcrumb({
+  os,
+  currentPage,
+}: { os: string; currentPage: string }) {
   const [platform] = os.split("/");
 
   return (
     <div className="flex items-center gap-2 sm:gap-4 text-sm min-w-0">
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        <span className="text-muted-foreground hidden sm:inline">{platform}</span>
+        <span className="text-muted-foreground hidden sm:inline">
+          {platform}
+        </span>
         <VersionSwitcher currentOs={os} />
       </div>
 
@@ -119,7 +125,12 @@ export function NavTop() {
         ? "find"
         : "keys";
 
-  const showHeaderControls = isHome || (isOSPage && (currentPage === "keys" || currentPage === "files" || currentPage === "find"));
+  const showHeaderControls =
+    isHome ||
+    (isOSPage &&
+      (currentPage === "keys" ||
+        currentPage === "files" ||
+        currentPage === "find"));
 
   return (
     <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background">
@@ -127,12 +138,20 @@ export function NavTop() {
         {/* Left group: logo + breadcrumb + left portal */}
         <div className="flex items-center gap-4 min-w-0 flex-wrap">
           <h1 className="text-xl font-bold shrink-0">
-            <Link href="/" className="hover:text-muted-foreground transition-colors">
+            <Link
+              href="/"
+              className="hover:text-muted-foreground transition-colors"
+            >
               entdb
             </Link>
           </h1>
           {isHome && <HomeControls />}
-          {isHome && <div id={HEADER_PORTAL_LEFT_ID} className="hidden sm:flex items-center" />}
+          {isHome && (
+            <div
+              id={HEADER_PORTAL_LEFT_ID}
+              className="hidden sm:flex items-center"
+            />
+          )}
           {isOSPage && os && <OSBreadcrumb os={os} currentPage={currentPage} />}
         </div>
 
@@ -146,7 +165,8 @@ export function NavTop() {
               className="flex min-w-0 max-w-xl flex-1 items-center gap-2"
             />
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center">
+            <KeyboardShortcuts os={os} />
             <ThemeToggle />
           </div>
         </div>

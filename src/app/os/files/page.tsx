@@ -56,6 +56,14 @@ export default function Files() {
           onChange={(e) => setKeyword(e.target.value)}
           className="pl-9 pr-9"
         />
+        {!keyword && (
+          <kbd
+            className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 font-mono text-[11px] text-muted-foreground sm:block"
+            title="Press / to filter"
+          >
+            /
+          </kbd>
+        )}
         {keyword && (
           <Button
             variant="ghost"

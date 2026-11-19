@@ -219,26 +219,6 @@ export default function FindByKey() {
     return () => clearTimeout(timer);
   }, [copied]);
 
-  // "/" focuses the filter from anywhere on the page.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
-        return;
-      const target = event.target as HTMLElement | null;
-      if (
-        target?.isContentEditable ||
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "")
-      )
-        return;
-      const input = document.getElementById(FILTER_INPUT_ID);
-      if (!input) return;
-      event.preventDefault();
-      (input as HTMLInputElement).select();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   const isFiltering = debouncedKeyword.length > 0;
   // Narrowed views (filter, changes only) open every folder; otherwise the
   // tree starts with top-level folders open, as before.

@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ChevronDown, Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import type { OS } from "@/lib/types";
-import { withBase, basePath, dataURL } from "@/lib/env";
 import { BetaBadge } from "@/components/beta-badge";
+import { VERSION_PICKER_ATTR } from "@/components/keyboard-shortcuts";
+import { basePath, dataURL } from "@/lib/env";
+import type { OS } from "@/lib/types";
 
 function compareVersion(a: string, b: string) {
   const l1 = a.split(".").map(Number);
@@ -53,11 +54,14 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
   }, [group]);
 
   const currentVersion = versions.find(
-    (v) => v.build === currentBuild || `${v.version}_${v.build}` === currentBuild
+    (v) =>
+      v.build === currentBuild || `${v.version}_${v.build}` === currentBuild,
   );
 
   const filteredVersions = versions.filter((v) =>
-    `${v.version} ${v.build} ${v.name}`.toLowerCase().includes(filter.toLowerCase())
+    `${v.version} ${v.build} ${v.name}`
+      .toLowerCase()
+      .includes(filter.toLowerCase()),
   );
 
   const handleSelect = (os: OS) => {
@@ -66,7 +70,9 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
     newParams.set("os", `${group}/${newTag}`);
 
     // Strip basePath from pathname since router.push adds it automatically
-    const pathWithoutBase = pathname.startsWith(basePath) ? pathname.slice(basePath.length) : pathname;
+    const pathWithoutBase = pathname.startsWith(basePath)
+      ? pathname.slice(basePath.length)
+      : pathname;
     router.push(`${pathWithoutBase}?${newParams.toString()}`);
     setOpen(false);
     setFilter("");
@@ -79,6 +85,8 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          {...{ [VERSION_PICKER_ATTR]: "" }}
+          title="Switch version (v)"
           className="justify-between min-w-[200px] font-mono"
         >
           {loading ? (
@@ -103,6 +111,14 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
             placeholder="Filter versions..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              // Enter picks the first match, so "v 26.1 Enter" switches.
+              if (e.key === "Enter" && filteredVersions[0]) {
+                e.preventDefault();
+                handleSelect(filteredVersions[0]);
+              }
+            }}
             className="h-8"
           />
         </div>

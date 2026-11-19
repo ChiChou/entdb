@@ -207,6 +207,38 @@ export default function OSList() {
 
   return (
     <div>
+      {/* The filter is usable before the list loads (no header shift). */}
+      <HeaderPortal>
+        <div className="relative flex-1 sm:flex-none sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Filter..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {!keyword && (
+            <kbd
+              className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 font-mono text-[11px] text-muted-foreground sm:block"
+              title="Press / to filter"
+            >
+              /
+            </kbd>
+          )}
+          {keyword && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setKeyword("")}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </HeaderPortal>
+
       {loading && (
         <div aria-busy="true" aria-label="Loading builds">
           {SKELETON_SECTIONS.map(({ cards, codenames }, section) => (
@@ -265,29 +297,6 @@ export default function OSList() {
             </div>
           </HeaderPortal>
 
-          <HeaderPortal>
-            <div className="relative flex-1 sm:flex-none sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Filter..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="pl-9 pr-9"
-              />
-              {keyword && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setKeyword("")}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </HeaderPortal>
-
           {/* Mobile platform buttons - shown inline in content */}
           <div className="flex sm:hidden items-center gap-1 mb-4">
             {groups.map((group) => (
@@ -332,6 +341,7 @@ export default function OSList() {
                           className="list-none"
                         >
                           <Link
+                            data-nav-item
                             href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
                             className={cn(
                               "block p-3 border rounded-lg transition-colors hover:bg-accent/50",
@@ -372,6 +382,7 @@ export default function OSList() {
                               className="list-none"
                             >
                               <Link
+                                data-nav-item
                                 href={`/os/keys?os=${group.name}/${os.version}_${os.build}`}
                                 className={cn(
                                   "block p-3 border rounded-lg transition-colors hover:bg-accent/50",

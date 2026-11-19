@@ -606,26 +606,6 @@ export default function Keys() {
     if (y !== null) requestAnimationFrame(() => window.scrollTo(0, y));
   }, [loading]);
 
-  // "/" focuses the filter from anywhere on the page.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
-        return;
-      const target = event.target as HTMLElement | null;
-      if (
-        target?.isContentEditable ||
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "")
-      )
-        return;
-      const input = document.getElementById(FILTER_INPUT_ID);
-      if (!input) return;
-      event.preventDefault();
-      (input as HTMLInputElement).select();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   const filterControls = (
     <div className="relative w-full">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
