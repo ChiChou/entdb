@@ -543,7 +543,7 @@ export default function Keys() {
   }, []);
 
   const filterControls = (
-    <div className="relative flex-1 sm:flex-none sm:w-96">
+    <div className="relative w-full">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
         id={FILTER_INPUT_ID}
@@ -574,196 +574,214 @@ export default function Keys() {
     </div>
   );
 
+  const versionPanelProps = {
+    activeCompareTag,
+    build,
+    compareWith,
+    group,
+    groupedVersions,
+    setCompareWith,
+    switchVersion,
+    versionsCount: versions.length,
+  };
+
+  const breadcrumb = (
+    <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 font-mono text-sm">
+      {activePath.map((node, i) => {
+        const last = i === activePath.length - 1;
+        return (
+          <span key={node.ns || "(all)"} className="flex items-center gap-1">
+            {i > 0 && (
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+            )}
+            <button
+              type="button"
+              onClick={() => selectNamespace(node.ns)}
+              disabled={last}
+              className={cn(
+                "rounded px-1 transition-colors",
+                last
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                i === 0 && "font-sans",
+              )}
+            >
+              {i === 0 ? "All keys" : node.label}
+            </button>
+          </span>
+        );
+      })}
+      <span className="ml-1 font-sans text-xs tabular-nums text-muted-foreground">
+        {namespaceKeys.length}
+        {isFiltering && !activeNs && ` of ${keys.length}`}
+      </span>
+    </div>
+  );
+
+  const toolbar = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 [grid-area:toolbar]">
+      {breadcrumb}
+
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-sm">
+        {activeCompareTag && (
+          <span className="inline-flex h-7 items-center gap-1 rounded-md border border-emerald-300/60 bg-emerald-50 pl-2 pr-0.5 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+            <GitCompare className="h-3.5 w-3.5" />
+            vs {compareVersion?.version ?? activeCompareTag}
+            <button
+              type="button"
+              onClick={() => setCompareWith(null)}
+              className="rounded p-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+              aria-label="Stop comparing"
+              title="Stop comparing"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        )}
+
+        {compareLoading && activeCompareTag && (
+          <span className="text-muted-foreground">Diffing keys…</span>
+        )}
+        {compareError && activeCompareTag && (
+          <span className="text-destructive">Diff unavailable</span>
+        )}
+
+        {diffReady && (
+          <>
+            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+              <CirclePlus className="h-3.5 w-3.5" />
+              {addedKeys.length} new
+            </span>
+            {removedKeys.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300">
+                <CircleMinus className="h-3.5 w-3.5" />
+                {removedKeys.length} removed
+              </span>
+            )}
+            {changedKeyCount > 0 && (
+              <Button
+                type="button"
+                variant={changesOnly ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setChangesOnly(!changesOnly)}
+                className="h-7 gap-1.5 px-2 text-xs"
+                aria-pressed={changesOnly}
+                title="Show only added and removed keys"
+              >
+                <ListFilter className="h-3.5 w-3.5" />
+                Changed only
+              </Button>
+            )}
+          </>
+        )}
+
+        {/* Wide screens show the version panel as a column instead. */}
+        {versions.length > 1 && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 px-2 text-xs 2xl:hidden"
+              >
+                <History className="h-3.5 w-3.5" />
+                Versions
+                <span className="inline-flex min-w-5 justify-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {versions.length}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-[min(calc(100vw-2rem),24rem)] p-3"
+              sideOffset={8}
+            >
+              <VersionHistoryPanel
+                {...versionPanelProps}
+                className="border-0 bg-transparent p-0"
+                listClassName="max-h-[min(65vh,36rem)] overflow-y-auto pr-1"
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+    </div>
+  );
+
+  const emptyMessage =
+    keys.length === 0 ? (
+      <p>No entitlement keys found for this OS version.</p>
+    ) : showChanges && !isFiltering ? (
+      <p>No keys changed between these versions.</p>
+    ) : showChanges ? (
+      <p>No changed keys match &quot;{keyword}&quot;</p>
+    ) : (
+      <p>No keys match &quot;{keyword}&quot;</p>
+    );
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       <HeaderPortal>{filterControls}</HeaderPortal>
 
-      <div className="flex flex-1 min-h-0 flex-col">
-        <main className="flex min-w-0 flex-1 flex-col">
-          {!loading && (
-            <div className="mb-3 flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {isFiltering ? (
-                    <>
-                      {filtered.length} of {keys.length} keys
-                    </>
-                  ) : (
-                    <>{keys.length} entitlement keys</>
-                  )}
-                </span>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
+          {keySkeletons.map((skeleton, i) => (
+            <div
+              key={skeleton}
+              className="h-7 rounded bg-muted/50"
+              style={{ width: `${65 + ((i * 17) % 30)}%` }}
+            />
+          ))}
+        </div>
+      ) : (
+        // Phone: toolbar / tree / list stacked. md+: tree column beside the
+        // toolbar and list. 2xl+: version history returns as a third column
+        // so switching or comparing stays one click away.
+        <div
+          className={cn(
+            "grid gap-x-6 gap-y-3 [grid-template-areas:'toolbar'_'nav'_'list']",
+            "md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:[grid-template-areas:'nav_toolbar'_'nav_list']",
+            "2xl:grid-cols-[18rem_minmax(0,1fr)]",
+            versions.length > 1 &&
+              "2xl:grid-cols-[18rem_minmax(0,1fr)_17rem] 2xl:[grid-template-areas:'nav_toolbar_aside'_'nav_list_aside']",
+          )}
+        >
+          {toolbar}
 
-                {activeCompareTag && (
-                  <span className="inline-flex h-7 items-center gap-1 rounded-md border border-emerald-300/60 bg-emerald-50 pl-2 pr-0.5 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                    <GitCompare className="h-3.5 w-3.5" />
-                    vs {compareVersion?.version ?? activeCompareTag}
-                    <button
-                      type="button"
-                      onClick={() => setCompareWith(null)}
-                      className="rounded p-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
-                      aria-label="Stop comparing"
-                      title="Stop comparing"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
-                )}
+          {listedKeys.length > 0 && (
+            <nav className="overflow-y-auto rounded-md border p-1 [grid-area:nav] max-md:max-h-56 md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:self-start">
+              <NamespaceTree
+                tree={keyTree}
+                selected={activeNs}
+                onSelect={selectNamespace}
+                isOpen={isNamespaceOpen}
+                onOpenChange={setNamespaceOpen}
+              />
+            </nav>
+          )}
 
-                {compareLoading && activeCompareTag && (
-                  <span className="text-sm text-muted-foreground">
-                    Diffing keys...
-                  </span>
-                )}
-
-                {compareError && activeCompareTag && (
-                  <span className="text-sm text-destructive">
-                    Diff unavailable
-                  </span>
-                )}
-
-                {versions.length > 1 && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 gap-1.5 px-2 text-xs"
-                      >
-                        <History className="h-3.5 w-3.5" />
-                        Versions
-                        <span className="inline-flex min-w-5 justify-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          {versions.length}
-                        </span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="start"
-                      className="w-[min(calc(100vw-2rem),24rem)] p-3"
-                      sideOffset={8}
-                    >
-                      <VersionHistoryPanel
-                        activeCompareTag={activeCompareTag}
-                        build={build}
-                        className="border-0 bg-transparent p-0"
-                        compareWith={compareWith}
-                        group={group}
-                        groupedVersions={groupedVersions}
-                        listClassName="max-h-[min(65vh,36rem)] overflow-y-auto pr-1"
-                        setCompareWith={setCompareWith}
-                        switchVersion={switchVersion}
-                        versionsCount={versions.length}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
-
-                {diffReady && (
-                  <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
-                      <CirclePlus className="h-3.5 w-3.5" />
-                      {addedKeys.length} new
-                    </span>
-                    {removedKeys.length > 0 && (
-                      <span className="inline-flex items-center gap-1 text-red-700 dark:text-red-300">
-                        <CircleMinus className="h-3.5 w-3.5" />
-                        {removedKeys.length} removed
-                      </span>
-                    )}
-                    {changedKeyCount > 0 && (
-                      <Button
-                        type="button"
-                        variant={changesOnly ? "secondary" : "outline"}
-                        size="sm"
-                        onClick={() => setChangesOnly(!changesOnly)}
-                        className="h-7 gap-1.5 px-2 text-xs"
-                        aria-pressed={changesOnly}
-                        title="Show only added and removed keys"
-                      >
-                        <ListFilter className="h-3.5 w-3.5" />
-                        Changed only
-                      </Button>
-                    )}
-                  </div>
-                )}
+          <section className="min-w-0 [grid-area:list]">
+            {listedKeys.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                {emptyMessage}
               </div>
-            </div>
+            ) : (
+              <KeyList entries={namespaceKeys} />
+            )}
+          </section>
+
+          {versions.length > 1 && (
+            <aside className="hidden [grid-area:aside] 2xl:sticky 2xl:top-20 2xl:block 2xl:self-start">
+              <VersionHistoryPanel
+                {...versionPanelProps}
+                className="max-h-[calc(100vh-6rem)]"
+                listClassName="min-h-0 flex-1 overflow-y-auto pr-1"
+              />
+            </aside>
           )}
-
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-1">
-              {keySkeletons.map((skeleton, i) => (
-                <div
-                  key={skeleton}
-                  className="h-7 bg-muted/50 rounded"
-                  style={{ width: `${65 + ((i * 17) % 30)}%` }}
-                />
-              ))}
-            </div>
-          ) : listedKeys.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              {keys.length === 0 ? (
-                <p>No entitlement keys found for this OS version.</p>
-              ) : showChanges && !isFiltering ? (
-                <p>No keys changed between these versions.</p>
-              ) : showChanges ? (
-                <p>No changed keys match &quot;{keyword}&quot;</p>
-              ) : (
-                <p>No keys match &quot;{keyword}&quot;</p>
-              )}
-            </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
-              <nav className="shrink-0 overflow-y-auto rounded-md border p-1 max-md:max-h-56 md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:w-72 md:self-start">
-                <NamespaceTree
-                  tree={keyTree}
-                  selected={activeNs}
-                  onSelect={selectNamespace}
-                  isOpen={isNamespaceOpen}
-                  onOpenChange={setNamespaceOpen}
-                />
-              </nav>
-
-              <section className="min-w-0 flex-1">
-                <div className="mb-2 flex flex-wrap items-center gap-x-1 gap-y-0.5 font-mono text-sm">
-                  {activePath.map((node, i) => {
-                    const last = i === activePath.length - 1;
-                    return (
-                      <span
-                        key={node.ns || "(all)"}
-                        className="flex items-center gap-1"
-                      >
-                        {i > 0 && (
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => selectNamespace(node.ns)}
-                          disabled={last}
-                          className={cn(
-                            "rounded px-1 transition-colors",
-                            last
-                              ? "font-medium text-foreground"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                            i === 0 && "font-sans",
-                          )}
-                        >
-                          {i === 0 ? "All keys" : node.label}
-                        </button>
-                      </span>
-                    );
-                  })}
-                  <span className="ml-1 text-xs tabular-nums text-muted-foreground">
-                    {namespaceKeys.length}
-                  </span>
-                </div>
-
-                <KeyList entries={namespaceKeys} />
-              </section>
-            </div>
-          )}
-        </main>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
