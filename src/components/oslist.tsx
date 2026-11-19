@@ -50,6 +50,14 @@ function getPlatformName(key: string): string {
   return PLATFORM_NAMES[key] || key;
 }
 
+/**
+ * Whether the product name adds anything beyond the version: "macOS Tahoe"
+ * does, "iOS 27.3" (shown right below as "27.3") doesn't.
+ */
+function hasCodename(os: OS) {
+  return !os.name.endsWith(os.version);
+}
+
 function groupByMajor(list: OS[]): MajorGroup[] {
   const bucket = new Map<string, OS[]>();
 
@@ -167,11 +175,12 @@ export default function OSList() {
       .filter((g) => selectedPlatform === null || g.name === selectedPlatform)
       .map((g) => {
         if (!kw) return g;
-        // Filter OS entries by product name or version
+        // Filter OS entries by product name, version or build
         const filteredList = g.list.filter(
           (os) =>
             os.name.toLowerCase().includes(kw) ||
-            os.version.toLowerCase().includes(kw),
+            os.version.toLowerCase().includes(kw) ||
+            os.build.toLowerCase().includes(kw),
         );
         return { ...g, list: filteredList };
       })
@@ -318,9 +327,11 @@ export default function OSList() {
                                 : "border-border hover:border-foreground/20",
                             )}
                           >
-                            <div className="text-xs text-muted-foreground mb-1 truncate">
-                              {os.name}
-                            </div>
+                            {hasCodename(os) && (
+                              <div className="text-xs text-muted-foreground mb-1 truncate">
+                                {os.name}
+                              </div>
+                            )}
                             <div className="flex justify-between items-center gap-2">
                               <span className="font-medium flex items-center gap-1.5">
                                 {os.version}
@@ -356,9 +367,11 @@ export default function OSList() {
                                     : "border-border hover:border-foreground/20",
                                 )}
                               >
-                                <div className="text-xs text-muted-foreground mb-1 truncate">
-                                  {os.name}
-                                </div>
+                                {hasCodename(os) && (
+                                  <div className="text-xs text-muted-foreground mb-1 truncate">
+                                    {os.name}
+                                  </div>
+                                )}
                                 <div className="flex justify-between items-center gap-2">
                                   <span className="font-medium flex items-center gap-1.5">
                                     {os.version}
