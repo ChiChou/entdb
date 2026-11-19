@@ -538,7 +538,7 @@ export default function Keys() {
     <div className="flex flex-col h-full">
       <HeaderPortal>{filterControls}</HeaderPortal>
 
-      <div className="flex flex-1 min-h-0 flex-col gap-5 lg:flex-row">
+      <div className="flex flex-1 min-h-0 flex-col">
         <main className="flex min-w-0 flex-1 flex-col">
           {!loading && (
             <div className="mb-3 flex flex-col gap-2">
@@ -552,6 +552,22 @@ export default function Keys() {
                     <>{keys.length} entitlement keys</>
                   )}
                 </span>
+
+                {activeCompareTag && (
+                  <span className="inline-flex h-7 items-center gap-1 rounded-md border border-emerald-300/60 bg-emerald-50 pl-2 pr-0.5 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                    <GitCompare className="h-3.5 w-3.5" />
+                    vs {compareVersion?.version ?? activeCompareTag}
+                    <button
+                      type="button"
+                      onClick={() => setCompareWith(null)}
+                      className="rounded p-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                      aria-label="Stop comparing"
+                      title="Stop comparing"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                )}
 
                 {compareLoading && activeCompareTag && (
                   <span className="text-sm text-muted-foreground">
@@ -572,7 +588,7 @@ export default function Keys() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 gap-1.5 px-2 text-xs lg:hidden"
+                        className="h-7 gap-1.5 px-2 text-xs"
                       >
                         <History className="h-3.5 w-3.5" />
                         Versions
@@ -583,7 +599,7 @@ export default function Keys() {
                     </PopoverTrigger>
                     <PopoverContent
                       align="start"
-                      className="w-[min(calc(100vw-2rem),34rem)] p-3 lg:hidden"
+                      className="w-[min(calc(100vw-2rem),24rem)] p-3"
                       sideOffset={8}
                     >
                       <VersionHistoryPanel
@@ -766,25 +782,6 @@ export default function Keys() {
             </div>
           )}
         </main>
-
-        {versions.length > 1 && (
-          <aside className="hidden shrink-0 lg:block lg:w-72">
-            <div className="space-y-4 lg:sticky lg:top-24">
-              <VersionHistoryPanel
-                activeCompareTag={activeCompareTag}
-                build={build}
-                className="max-h-[calc(100vh-7rem)]"
-                compareWith={compareWith}
-                group={group}
-                groupedVersions={groupedVersions}
-                listClassName="min-h-0 flex-1 overflow-y-auto pr-1"
-                setCompareWith={setCompareWith}
-                switchVersion={switchVersion}
-                versionsCount={versions.length}
-              />
-            </div>
-          </aside>
-        )}
       </div>
     </div>
   );
