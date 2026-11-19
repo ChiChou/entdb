@@ -122,6 +122,8 @@ const FileItem = memo(function FileItem({
         <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
       )}
       <Link
+        data-nav-item
+        data-tree-row
         href={`/os/bin?path=${encodeURIComponent(fullPath)}&os=${linkOs}`}
         className={cn(
           "font-mono text-sm hover:underline truncate",
@@ -205,7 +207,12 @@ function TreeFolder({
   return (
     <li>
       <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger className="flex items-center gap-2 py-1 pl-1 w-full hover:bg-accent rounded transition-colors text-left group">
+        <CollapsibleTrigger
+          data-nav-item
+          data-tree-row
+          data-tree-folder
+          className="flex items-center gap-2 py-1 pl-1 w-full hover:bg-accent rounded transition-colors text-left group outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           {open ? (
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           ) : (
@@ -227,7 +234,7 @@ function TreeFolder({
             </span>
           )}
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent data-tree-content>
           <div
             className={
               isShallow
@@ -259,6 +266,61 @@ function TreeFolder({
   );
 }
 
+/**
+ * Arrow keys over the tree's focusable rows (folder toggles and file links):
+ * ↑/↓ move, → opens a folder or steps into it, ← closes it or goes to the
+ * parent folder, Home/End jump. Same model as the keys page's namespace tree.
+ */
+function onTreeKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  const current = (event.target as HTMLElement).closest<HTMLElement>(
+    "[data-tree-row]",
+  );
+  if (!current) return;
+  const rows = [
+    ...event.currentTarget.querySelectorAll<HTMLElement>("[data-tree-row]"),
+  ].filter((row) => row.getClientRects().length > 0);
+  const index = rows.indexOf(current);
+  const isFolder = current.hasAttribute("data-tree-folder");
+  const isOpen = current.getAttribute("data-state") === "open";
+  const parentFolder = () =>
+    current
+      .closest("[data-tree-content]")
+      ?.parentElement?.querySelector<HTMLElement>(
+        ":scope > [data-tree-folder]",
+      );
+
+  let next: HTMLElement | null | undefined;
+  switch (event.key) {
+    case "ArrowDown":
+      next = rows[index + 1];
+      break;
+    case "ArrowUp":
+      next = rows[index - 1];
+      break;
+    case "Home":
+      next = rows[0];
+      break;
+    case "End":
+      next = rows.at(-1);
+      break;
+    case "ArrowRight":
+      if (isFolder && !isOpen) current.click();
+      else if (isFolder) next = rows[index + 1];
+      else return;
+      break;
+    case "ArrowLeft":
+      if (isFolder && isOpen) current.click();
+      else next = parentFolder();
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
+  next?.focus();
+  next?.scrollIntoView({ block: "nearest" });
+}
+
 const FileSystem = memo(function FileSystem({
   list,
   os,
@@ -274,7 +336,9 @@ const FileSystem = memo(function FileSystem({
   const marks = useMemo(() => ({ status, osFor }), [status, osFor]);
   return (
     <MarksContext.Provider value={marks}>
-      <Tree item={tree} os={os} depth={0} expandAll={expandAll} />
+      <div onKeyDown={onTreeKeyDown}>
+        <Tree item={tree} os={os} depth={0} expandAll={expandAll} />
+      </div>
     </MarksContext.Provider>
   );
 });
