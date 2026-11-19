@@ -713,7 +713,7 @@ export default function Keys() {
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
-              <nav className="shrink-0 overflow-y-auto rounded-md border p-1 max-md:max-h-56 md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:w-64 md:self-start">
+              <nav className="shrink-0 overflow-y-auto rounded-md border p-1 max-md:max-h-56 md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:w-72 md:self-start">
                 <NamespaceTree
                   tree={keyTree}
                   selected={activeNs}

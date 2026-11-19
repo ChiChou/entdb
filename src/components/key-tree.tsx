@@ -216,15 +216,14 @@ export function NamespaceTree({
             ) : (
               <span className="w-5 shrink-0" />
             )}
-            <span
+            <MiddleTruncate
+              text={isRoot ? "All keys" : node.label}
               className={cn(
-                "min-w-0 flex-1 truncate",
+                "flex-1",
                 !isRoot && "font-mono",
                 active && "font-medium",
               )}
-            >
-              {isRoot ? "All keys" : node.label}
-            </span>
+            />
             {node.marked > 0 && (
               <span
                 className="shrink-0 rounded-full bg-emerald-50 px-1.5 text-xs tabular-nums text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
@@ -240,5 +239,31 @@ export function NamespaceTree({
         );
       })}
     </div>
+  );
+}
+
+/** Number of trailing characters kept visible when a label is shortened. */
+const KEEP_TAIL = 8;
+
+/**
+ * Ellipsis in the middle (`authentication-s…ces-core`) so siblings sharing a
+ * long prefix stay distinguishable. Pure CSS: only the head shrinks, and only
+ * when the row is too narrow.
+ */
+function MiddleTruncate({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
+  if (text.length <= KEEP_TAIL * 2) {
+    return <span className={cn("min-w-0 truncate", className)}>{text}</span>;
+  }
+  return (
+    <span className={cn("flex min-w-0", className)}>
+      <span className="truncate">{text.slice(0, -KEEP_TAIL)}</span>
+      <span className="shrink-0 whitespace-pre">{text.slice(-KEEP_TAIL)}</span>
+    </span>
   );
 }
