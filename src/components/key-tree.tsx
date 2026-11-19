@@ -24,7 +24,8 @@ type NamespaceTreeProps = {
 /**
  * Single-column namespace navigator following the WAI-ARIA tree pattern:
  * ↑/↓ move, → expands or enters, ← collapses or goes to the parent,
- * Home/End jump, and selection follows focus.
+ * Home/End jump, typing jumps to a matching name, and selection follows
+ * focus.
  */
 export function NamespaceTree({
   tree,
@@ -83,7 +84,43 @@ export function NamespaceTree({
     onSelect(ns);
   };
 
+  // Type-ahead: typed characters within 600ms form a prefix; jump to the next
+  // visible namespace whose label starts with it.
+  const typeahead = useRef({ text: "", at: 0 });
+  const findByPrefix = (char: string) => {
+    const now = Date.now();
+    const state = typeahead.current;
+    state.text = now - state.at > 600 ? char : state.text + char;
+    state.at = now;
+    // Repeating one letter ("s", "s") cycles through matches for it; a
+    // longer prefix keeps the current row while it still matches.
+    const repeated = [...state.text].every((c) => c === char);
+    const prefix = (repeated ? char : state.text).toLowerCase();
+    const start = repeated ? index + 1 : index;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[(start + i) % rows.length];
+      if (row.node.ns && row.node.label.toLowerCase().startsWith(prefix)) {
+        return row.node.ns;
+      }
+    }
+    return undefined;
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.key.length === 1 &&
+      event.key !== " " &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey
+    ) {
+      // Leave "/" to the page-level shortcut.
+      if (event.key === "/") return;
+      go(findByPrefix(event.key));
+      event.preventDefault();
+      return;
+    }
+
     const row = rows[index];
     if (!row) return;
     const { node } = row;

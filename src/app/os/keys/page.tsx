@@ -85,6 +85,8 @@ function defaultOpenNamespaces(
   return open;
 }
 
+const FILTER_INPUT_ID = "key-filter";
+
 const keySkeletons = Array.from(
   { length: 30 },
   (_, index) => `key-skeleton-${index}`,
@@ -519,16 +521,45 @@ export default function Keys() {
     return Object.entries(groups).sort(([a], [b]) => Number(b) - Number(a));
   }, [versions]);
 
+  // "/" focuses the filter from anywhere on the page, as on GitHub.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey)
+        return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName ?? "")
+      )
+        return;
+      const input = document.getElementById(FILTER_INPUT_ID);
+      if (!input) return;
+      event.preventDefault();
+      (input as HTMLInputElement).select();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const filterControls = (
     <div className="relative flex-1 sm:flex-none sm:w-96">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
+        id={FILTER_INPUT_ID}
         type="text"
         placeholder="Filter entitlement keys..."
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
         className="pl-9 pr-9"
       />
+      {!keyword && (
+        <kbd
+          className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 font-mono text-[11px] text-muted-foreground sm:block"
+          title="Press / to filter"
+        >
+          /
+        </kbd>
+      )}
       {keyword && (
         <Button
           variant="ghost"
