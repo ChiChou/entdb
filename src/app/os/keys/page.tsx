@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryFilter } from "@/hooks/use-query-filter";
 import { createEngine } from "@/lib/engine";
 import { basePath } from "@/lib/env";
@@ -78,10 +79,78 @@ function defaultOpenNamespaces(
 
 const FILTER_INPUT_ID = "key-filter";
 
-const keySkeletons = Array.from(
-  { length: 30 },
-  (_, index) => `key-skeleton-${index}`,
-);
+/**
+ * Page grid. Phone: toolbar / tree / list stacked. md+: tree column beside
+ * the toolbar and list. 2xl+: version history returns as a third column so
+ * switching or comparing stays one click away. Shared with the skeleton so
+ * nothing moves when the data arrives.
+ */
+function keysLayoutClass(withVersions: boolean) {
+  return cn(
+    "grid gap-x-6 gap-y-3 [grid-template-areas:'toolbar'_'nav'_'list']",
+    "md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:[grid-template-areas:'nav_toolbar'_'nav_list']",
+    "2xl:grid-cols-[18rem_minmax(0,1fr)]",
+    withVersions &&
+      "2xl:grid-cols-[18rem_minmax(0,1fr)_17rem] 2xl:[grid-template-areas:'nav_toolbar_aside'_'nav_list_aside']",
+  );
+}
+
+/** Tree depth per skeleton row: a few top-level namespaces, one opened. */
+const TREE_SKELETON = [0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2];
+const LIST_SKELETON = Array.from({ length: 48 }, (_, i) => i);
+
+function KeysSkeleton() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading keys"
+      className={keysLayoutClass(true)}
+    >
+      <div className="flex items-center gap-2 [grid-area:toolbar]">
+        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-4 w-10" />
+        <Skeleton className="ml-auto h-7 w-24 2xl:hidden" />
+      </div>
+
+      <div className="overflow-hidden rounded-md border p-1 [grid-area:nav] max-md:h-56 md:self-start">
+        {TREE_SKELETON.map((depth, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder rows
+            key={i}
+            className="flex h-7 items-center gap-2 pr-2"
+            style={{ paddingLeft: `${depth * 0.875 + 0.5}rem` }}
+          >
+            <Skeleton className="h-3 w-3 rounded-sm opacity-60" />
+            <Skeleton
+              className="h-3.5"
+              style={{ width: `${40 + ((i * 37) % 45)}%` }}
+            />
+            <Skeleton className="ml-auto h-3 w-6 opacity-60" />
+          </div>
+        ))}
+      </div>
+
+      {/* Same column flow as KeyList: 1 column, 2 from xl, 3 on very wide. */}
+      <div className="columns-1 gap-x-4 [grid-area:list] xl:columns-2 min-[2200px]:columns-3">
+        {LIST_SKELETON.map((i) => (
+          <div key={i} className="mb-1 break-inside-avoid py-1.5">
+            <Skeleton
+              className="h-4"
+              style={{ width: `${45 + ((i * 29) % 45)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden space-y-2 rounded-md border p-3 [grid-area:aside] 2xl:block 2xl:self-start">
+        <Skeleton className="mb-3 h-4 w-28" />
+        {LIST_SKELETON.slice(0, 12).map((i) => (
+          <Skeleton key={i} className={cn("h-7", i < 4 && "ml-4")} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 type VersionHistoryPanelProps = {
   activeCompareTag: string | null;
@@ -740,28 +809,9 @@ export default function Keys() {
       <HeaderPortal>{filterControls}</HeaderPortal>
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
-          {keySkeletons.map((skeleton, i) => (
-            <div
-              key={skeleton}
-              className="h-7 rounded bg-muted/50"
-              style={{ width: `${65 + ((i * 17) % 30)}%` }}
-            />
-          ))}
-        </div>
+        <KeysSkeleton />
       ) : (
-        // Phone: toolbar / tree / list stacked. md+: tree column beside the
-        // toolbar and list. 2xl+: version history returns as a third column
-        // so switching or comparing stays one click away.
-        <div
-          className={cn(
-            "grid gap-x-6 gap-y-3 [grid-template-areas:'toolbar'_'nav'_'list']",
-            "md:grid-cols-[15rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:[grid-template-areas:'nav_toolbar'_'nav_list']",
-            "2xl:grid-cols-[18rem_minmax(0,1fr)]",
-            versions.length > 1 &&
-              "2xl:grid-cols-[18rem_minmax(0,1fr)_17rem] 2xl:[grid-template-areas:'nav_toolbar_aside'_'nav_list_aside']",
-          )}
-        >
+        <div className={keysLayoutClass(versions.length > 1)}>
           {toolbar}
 
           {listedKeys.length > 0 && (

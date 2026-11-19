@@ -23,6 +23,7 @@ import FileSystem, { type PathStatus } from "@/components/filesystem";
 import { HeaderPortal } from "@/components/header-portal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQueryFilter } from "@/hooks/use-query-filter";
 import { createEngine } from "@/lib/engine";
 import {
@@ -37,7 +38,26 @@ import { cn } from "@/lib/utils";
 
 const FILTER_INPUT_ID = "path-filter";
 
-const skeletonWidths = [60, 72, 48, 80, 55, 66, 74, 52];
+/**
+ * Placeholder tree (depth, isFolder) shaped like FileSystem: a couple of
+ * top-level folders open with files and a nested folder.
+ */
+const TREE_SKELETON: [number, boolean][] = [
+  [0, true],
+  [1, false],
+  [1, false],
+  [1, false],
+  [1, false],
+  [0, true],
+  [1, true],
+  [2, false],
+  [2, false],
+  [1, true],
+  [1, false],
+  [0, true],
+  [1, false],
+  [1, false],
+];
 
 function keysUrlFor(os: string, ns: string) {
   const query = new URLSearchParams({ os });
@@ -517,13 +537,28 @@ export default function FindByKey() {
       </div>
 
       {loading ? (
-        <div className="space-y-2">
-          {skeletonWidths.map((width) => (
+        <div
+          aria-busy="true"
+          aria-label="Loading binaries"
+          className="space-y-0.5"
+        >
+          {TREE_SKELETON.map(([depth, folder], i) => (
             <div
-              key={width}
-              className="h-5 animate-pulse rounded bg-muted"
-              style={{ width: `${width / 3}%` }}
-            />
+              // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder rows
+              key={i}
+              className="flex h-7 items-center gap-2 px-1"
+              style={{ paddingLeft: `${depth * 1.5 + 0.25}rem` }}
+            >
+              {folder && (
+                <Skeleton className="h-3.5 w-3.5 rounded-sm opacity-60" />
+              )}
+              <Skeleton className="h-4 w-4 rounded-sm opacity-60" />
+              <Skeleton
+                className="h-4"
+                style={{ width: `${(folder ? 7 : 12) + ((i * 7) % 12)}rem` }}
+              />
+              {folder && <Skeleton className="h-3 w-5 opacity-60" />}
+            </div>
           ))}
         </div>
       ) : list.length === 0 ? (

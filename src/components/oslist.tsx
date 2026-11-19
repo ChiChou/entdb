@@ -13,6 +13,7 @@ import { BetaBadge } from "./beta-badge";
 import { HeaderPortal } from "./header-portal";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Skeleton } from "./ui/skeleton";
 
 function responseOK(r: Response) {
   if (!r.ok) {
@@ -57,6 +58,13 @@ function getPlatformName(key: string): string {
 function hasCodename(os: OS) {
   return !os.name.endsWith(os.version);
 }
+
+/** Loading placeholders: iOS first (no codename line), then macOS, OS X. */
+const SKELETON_SECTIONS = [
+  { cards: 12, codenames: false },
+  { cards: 8, codenames: true },
+  { cards: 4, codenames: true },
+];
 
 function groupByMajor(list: OS[]): MajorGroup[] {
   const bucket = new Map<string, OS[]>();
@@ -200,20 +208,25 @@ export default function OSList() {
   return (
     <div>
       {loading && (
-        <div className="space-y-6">
-          {[1, 2, 3].map((group) => (
-            <section key={group} className="mb-6">
-              <div className="h-8 mb-4" />
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {[1, 2, 3, 4, 5, 6].map((item) => (
+        <div aria-busy="true" aria-label="Loading builds">
+          {SKELETON_SECTIONS.map(({ cards, codenames }, section) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder sections
+            <section key={section} className="mb-6">
+              {/* Matches the centered text-2xl heading. */}
+              <Skeleton className="mx-auto mb-4 h-8 w-24" />
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {Array.from({ length: cards }, (_, i) => (
                   <div
-                    key={item}
-                    className="p-3 border border-border/50 rounded-lg"
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder cards
+                    key={i}
+                    className="rounded-lg border border-border/50 p-3"
                   >
-                    <div className="h-3 w-20 bg-muted/50 rounded mb-2" />
-                    <div className="flex justify-between">
-                      <div className="h-5 w-12 bg-muted/50 rounded" />
-                      <div className="h-4 w-14 bg-muted/50 rounded" />
+                    {/* Only cards with a codename ("macOS Tahoe") have the
+                        small label line; iOS cards are just version + build. */}
+                    {codenames && <Skeleton className="mb-1 h-4 w-24" />}
+                    <div className="flex items-center justify-between gap-2">
+                      <Skeleton className="h-6 w-14" />
+                      <Skeleton className="h-4 w-16" />
                     </div>
                   </div>
                 ))}
