@@ -136,14 +136,19 @@ export function NavTop() {
           {isOSPage && os && <OSBreadcrumb os={os} currentPage={currentPage} />}
         </div>
 
-        <div className="hidden sm:block flex-1 min-w-0" />
-
-        {/* Right group: filter + theme */}
-        <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
+        {/* Filter sits next to the page controls (not pushed to the far edge,
+            which left a wide gap on large screens); the theme toggle takes
+            the far right. Wraps to its own row when there's no room. */}
+        <div className="flex min-w-[13rem] flex-1 items-center gap-2">
           {showHeaderControls && (
-            <div id={HEADER_PORTAL_ID} className="flex items-center gap-2 flex-1 sm:flex-none" />
+            <div
+              id={HEADER_PORTAL_ID}
+              className="flex min-w-0 max-w-xl flex-1 items-center gap-2"
+            />
           )}
-          <ThemeToggle />
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
