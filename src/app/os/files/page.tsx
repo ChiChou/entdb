@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Search, X, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import FileSystem from "@/components/filesystem";
 import { HeaderPortal } from "@/components/header-portal";
-import { createEngine } from "@/lib/engine";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useQueryFilter } from "@/hooks/use-query-filter";
+import { createEngine } from "@/lib/engine";
 
 export default function Files() {
   const params = useSearchParams();
@@ -33,9 +33,9 @@ export default function Files() {
   const filtered = useMemo(
     () =>
       files.filter((path) =>
-        path.toLowerCase().includes(debouncedKeyword.toLowerCase())
+        path.toLowerCase().includes(debouncedKeyword.toLowerCase()),
       ),
-    [debouncedKeyword, files]
+    [debouncedKeyword, files],
   );
 
   const isFiltering = debouncedKeyword.length > 0;
@@ -117,7 +117,9 @@ export default function Files() {
                 <div className="h-4 w-4 bg-muted rounded animate-pulse" />
                 <div
                   className="h-5 bg-muted rounded animate-pulse"
-                  style={{ width: `${120 + Math.random() * 200}px` }}
+                  // Deterministic widths: Math.random() differs between the
+                  // server render and hydration.
+                  style={{ width: `${120 + ((i * 73) % 200)}px` }}
                 />
               </div>
             ))}
