@@ -1,13 +1,60 @@
-import { useState, useEffect, memo, useMemo } from "react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronRight, ChevronDown, FileText, Folder } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Folder,
+  Minus,
+  Plus,
+} from "lucide-react";
+import {
+  createContext,
+  memo,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import filesToTree, { type TreeWithFullPath } from "@/lib/tree";
 import Link from "next/link";
+
+import { cn } from "@/lib/utils";
+
+export type PathStatus = "added" | "removed";
+
+/**
+ * Optional diff marks: which paths were gained/lost, and which OS a lost path
+ * should link to (it no longer exists in the current one).
+ */
+interface Marks {
+  status?: (path: string) => PathStatus | undefined;
+  osFor?: (path: string) => string | undefined;
+}
+
+const MarksContext = createContext<Marks>({});
+
+function countMarks(item: TreeWithFullPath, status: Marks["status"]) {
+  let added = 0;
+  let removed = 0;
+  if (!status) return { added, removed };
+  for (const value of Object.values(item)) {
+    if (typeof value === "string") {
+      const mark = status(value);
+      if (mark === "added") added++;
+      else if (mark === "removed") removed++;
+    } else {
+      const sub = countMarks(value, status);
+      added += sub.added;
+      removed += sub.removed;
+    }
+  }
+  return { added, removed };
+}
 
 function countItems(item: TreeWithFullPath): number {
   let count = 0;
@@ -40,12 +87,46 @@ const FileItem = memo(function FileItem({
   fullPath: string;
   os: string;
 }) {
+  const marks = useContext(MarksContext);
+  const mark = marks.status?.(fullPath);
+  const linkOs = marks.osFor?.(fullPath) ?? os;
   return (
-    <div className="flex items-center gap-2 py-1 px-1 hover:bg-accent rounded transition-colors">
-      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+    <div
+      className={cn(
+        "flex items-center gap-2 py-1 px-1 rounded transition-colors",
+        mark === "added"
+          ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
+          : mark === "removed"
+            ? "bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
+            : "hover:bg-accent",
+      )}
+    >
+      {mark ? (
+        <span
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+            mark === "removed"
+              ? "border-red-300/70 dark:border-red-700"
+              : "border-emerald-300/70 dark:border-emerald-700",
+          )}
+          title={mark === "removed" ? "Lost" : "Gained"}
+          aria-label={mark === "removed" ? "Lost" : "Gained"}
+        >
+          {mark === "removed" ? (
+            <Minus className="h-3 w-3" />
+          ) : (
+            <Plus className="h-3 w-3" />
+          )}
+        </span>
+      ) : (
+        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+      )}
       <Link
-        href={`/os/bin?path=${encodeURIComponent(fullPath)}&os=${os}`}
-        className="font-mono text-sm hover:underline text-muted-foreground hover:text-foreground truncate"
+        href={`/os/bin?path=${encodeURIComponent(fullPath)}&os=${linkOs}`}
+        className={cn(
+          "font-mono text-sm hover:underline truncate",
+          !mark && "text-muted-foreground hover:text-foreground",
+        )}
         title={fullPath}
       >
         {name}
@@ -83,11 +164,7 @@ function Tree({
       ))}
       {files.map(([key, value]) => (
         <li key={value as string}>
-          <FileItem
-            name={key}
-            fullPath={value as string}
-            os={os}
-          />
+          <FileItem name={key} fullPath={value as string} os={os} />
         </li>
       ))}
     </ul>
@@ -107,8 +184,15 @@ function TreeFolder({
   depth: number;
   expandAll: boolean | null;
 }) {
-  const [open, setOpen] = useState(expandAll === true || (expandAll === null && depth < 1));
+  const [open, setOpen] = useState(
+    expandAll === true || (expandAll === null && depth < 1),
+  );
   const itemCount = countItems(item);
+  const marks = useContext(MarksContext);
+  const changed = useMemo(
+    () => countMarks(item, marks.status),
+    [item, marks.status],
+  );
   const maxDepth = getMaxDepth(item);
   const isShallow = maxDepth === 0;
 
@@ -132,9 +216,25 @@ function TreeFolder({
           <span className="ml-2 text-xs text-muted-foreground">
             {itemCount}
           </span>
+          {changed.added > 0 && (
+            <span className="text-xs tabular-nums text-emerald-700 dark:text-emerald-300">
+              +{changed.added}
+            </span>
+          )}
+          {changed.removed > 0 && (
+            <span className="text-xs tabular-nums text-red-700 dark:text-red-300">
+              −{changed.removed}
+            </span>
+          )}
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className={isShallow ? "ml-6 mt-1 space-y-0.5" : "ml-4 pl-2 border-l border-border"}>
+          <div
+            className={
+              isShallow
+                ? "ml-6 mt-1 space-y-0.5"
+                : "ml-4 pl-2 border-l border-border"
+            }
+          >
             {isShallow ? (
               Object.entries(item).map(([key, value]) => (
                 <FileItem
@@ -145,7 +245,12 @@ function TreeFolder({
                 />
               ))
             ) : (
-              <Tree item={item} os={os} depth={depth + 1} expandAll={expandAll} />
+              <Tree
+                item={item}
+                os={os}
+                depth={depth + 1}
+                expandAll={expandAll}
+              />
             )}
           </div>
         </CollapsibleContent>
@@ -158,16 +263,19 @@ const FileSystem = memo(function FileSystem({
   list,
   os,
   expandAll = null,
+  status,
+  osFor,
 }: {
   list: string[];
   os: string;
   expandAll?: boolean | null;
-}) {
+} & Marks) {
   const tree = useMemo(() => filesToTree(list), [list]);
+  const marks = useMemo(() => ({ status, osFor }), [status, osFor]);
   return (
-    <div>
+    <MarksContext.Provider value={marks}>
       <Tree item={tree} os={os} depth={0} expandAll={expandAll} />
-    </div>
+    </MarksContext.Provider>
   );
 });
 
