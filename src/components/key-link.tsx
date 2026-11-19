@@ -1,5 +1,8 @@
-import { Minus, Plus } from "lucide-react";
+"use client";
+
+import { Check, Copy, Minus, Plus } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -14,40 +17,97 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
   const isRemoved = entry.status === "removed";
 
   return (
-    <Link
-      href={`/os/find?key=${encodeURIComponent(
-        entry.key,
-      )}&os=${encodeURIComponent(entry.os)}`}
+    <div
       className={cn(
-        "group mb-1 flex min-w-0 break-inside-avoid items-start gap-2 rounded-md px-1 py-1 font-mono text-sm leading-5 transition-colors",
+        "group relative mb-1 break-inside-avoid rounded-md transition-colors",
         isNew
           ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
           : isRemoved
             ? "bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
-            : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
       )}
-      title={entry.key}
     >
-      {(isNew || isRemoved) && (
-        <span
-          aria-label={isRemoved ? "Removed" : "New"}
-          className={cn(
-            "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-            isRemoved
-              ? "border-red-300/70 text-red-700 dark:border-red-700 dark:text-red-300"
-              : "border-emerald-300/70 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300",
-          )}
-          title={isRemoved ? "Removed" : "New"}
-        >
-          {isRemoved ? (
-            <Minus className="h-3 w-3" aria-hidden="true" />
-          ) : (
-            <Plus className="h-3 w-3" aria-hidden="true" />
-          )}
-        </span>
+      <Link
+        href={`/os/find?key=${encodeURIComponent(
+          entry.key,
+        )}&os=${encodeURIComponent(entry.os)}`}
+        className="flex min-w-0 items-start gap-2 rounded-md py-1 pl-1 pr-7 font-mono text-sm leading-5"
+        title={entry.key}
+        onKeyDown={(event) => {
+          // ⌘C / Ctrl+C on a focused key copies it (unless text is selected).
+          if (
+            event.key === "c" &&
+            (event.metaKey || event.ctrlKey) &&
+            !window.getSelection()?.toString()
+          ) {
+            event.preventDefault();
+            void navigator.clipboard.writeText(entry.key);
+          }
+        }}
+      >
+        {(isNew || isRemoved) && (
+          <span
+            aria-label={isRemoved ? "Removed" : "New"}
+            className={cn(
+              "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+              isRemoved
+                ? "border-red-300/70 text-red-700 dark:border-red-700 dark:text-red-300"
+                : "border-emerald-300/70 text-emerald-700 dark:border-emerald-700 dark:text-emerald-300",
+            )}
+            title={isRemoved ? "Removed" : "New"}
+          >
+            {isRemoved ? (
+              <Minus className="h-3 w-3" aria-hidden="true" />
+            ) : (
+              <Plus className="h-3 w-3" aria-hidden="true" />
+            )}
+          </span>
+        )}
+        <KeyLabel text={entry.key} />
+      </Link>
+      <CopyKey text={entry.key} />
+    </div>
+  );
+}
+
+/**
+ * Icon button revealed on row hover. Kept out of the tab order so keys don't
+ * cost two stops each; keyboard users copy with ⌘C / Ctrl+C on the link.
+ */
+function CopyKey({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      onClick={() => {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => setCopied(true))
+          .catch(() => {});
+      }}
+      aria-label={copied ? "Copied" : `Copy ${text}`}
+      title={copied ? "Copied" : "Copy key"}
+      className={cn(
+        "absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-opacity hover:bg-background hover:text-foreground",
+        copied
+          ? "opacity-100 text-emerald-600 dark:text-emerald-400"
+          : "opacity-0 group-hover:opacity-100",
       )}
-      <KeyLabel text={entry.key} />
-    </Link>
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
+    </button>
   );
 }
 
