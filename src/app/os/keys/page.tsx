@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  ChevronDown,
   ChevronRight,
   CircleMinus,
   CirclePlus,
   GitCompare,
   History,
+  ListFilter,
   Search,
   X,
 } from "lucide-react";
@@ -243,7 +243,6 @@ export default function Keys() {
   const [compareKeys, setCompareKeys] = useState<string[] | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState(false);
-  const [changesExpanded, setChangesExpanded] = useState(false);
   const { keyword, setKeyword, debouncedKeyword } = useQueryFilter();
 
   const compareWith = params.get("diff");
@@ -322,7 +321,6 @@ export default function Keys() {
       setCompareKeys(null);
       setCompareLoading(false);
       setCompareError(false);
-      setChangesExpanded(false);
       return;
     }
 
@@ -345,7 +343,6 @@ export default function Keys() {
         if (!cancelled) {
           setCompareKeys([]);
           setCompareError(true);
-          setChangesExpanded(false);
         }
       })
       .finally(() => {
@@ -433,12 +430,30 @@ export default function Keys() {
 
   const isFiltering = debouncedKeyword.length > 0;
 
+  // "Changed only" narrows the tree and list to added + removed keys. Kept in
+  // `?changes=1` (via replaceState, like `?ns=`) so the view can be shared.
+  const [changesOnly, setChangesOnlyState] = useState(
+    () => params.get("changes") === "1",
+  );
+  const setChangesOnly = (value: boolean) => {
+    setChangesOnlyState(value);
+    const next = new URLSearchParams(window.location.search);
+    if (value) next.set("changes", "1");
+    else next.delete("changes");
+    window.history.replaceState(null, "", `?${next.toString()}`);
+  };
+  const showChanges = changesOnly && diffReady;
+  const listedKeys = showChanges ? changedKeys : displayedKeys;
+
   const keyTree = useMemo(
     () =>
-      buildNamespaceTree(filtered, {
-        isMarked: diffReady ? (key) => addedKeySet.has(key) : undefined,
-      }),
-    [addedKeySet, diffReady, filtered],
+      buildNamespaceTree(
+        listedKeys.map((entry) => entry.key),
+        {
+          isMarked: diffReady ? (key) => addedKeySet.has(key) : undefined,
+        },
+      ),
+    [addedKeySet, diffReady, listedKeys],
   );
 
   // Selection lives in `?ns=` so it survives reloads and can be shared. It is
@@ -473,8 +488,8 @@ export default function Keys() {
   }, []);
 
   const namespaceKeys = useMemo(
-    () => displayedKeys.filter((entry) => inNamespace(entry.key, activeNs)),
-    [activeNs, displayedKeys],
+    () => listedKeys.filter((entry) => inNamespace(entry.key, activeNs)),
+    [activeNs, listedKeys],
   );
 
   const setCompareWith = (value: string | null) => {
@@ -626,61 +641,20 @@ export default function Keys() {
                     {changedKeyCount > 0 && (
                       <Button
                         type="button"
-                        variant={changesExpanded ? "secondary" : "outline"}
-                        size="icon"
-                        onClick={() => setChangesExpanded((value) => !value)}
-                        className="h-7 w-7"
-                        aria-expanded={changesExpanded}
-                        aria-label={
-                          changesExpanded
-                            ? "Collapse changed keys"
-                            : "Expand changed keys"
-                        }
-                        title={
-                          changesExpanded
-                            ? "Collapse changed keys"
-                            : "Expand changed keys"
-                        }
+                        variant={changesOnly ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => setChangesOnly(!changesOnly)}
+                        className="h-7 gap-1.5 px-2 text-xs"
+                        aria-pressed={changesOnly}
+                        title="Show only added and removed keys"
                       >
-                        <ChevronDown
-                          className={cn(
-                            "h-4 w-4 transition-transform",
-                            changesExpanded && "rotate-180",
-                          )}
-                        />
+                        <ListFilter className="h-3.5 w-3.5" />
+                        Changed only
                       </Button>
                     )}
                   </div>
                 )}
               </div>
-
-              {changesExpanded && diffReady && (
-                <div className="rounded-md border bg-muted/20 p-2">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span>
-                      {changedKeys.length} of {changedKeyCount} changed keys
-                    </span>
-                    {isFiltering && (
-                      <span>Filtered by &quot;{debouncedKeyword}&quot;</span>
-                    )}
-                  </div>
-
-                  {changedKeys.length === 0 ? (
-                    <div className="py-3 text-center text-sm text-muted-foreground">
-                      No changed keys match &quot;{keyword}&quot;
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
-                      {changedKeys.map((entry) => (
-                        <KeyLink
-                          key={`${entry.status}:${entry.key}`}
-                          entry={entry}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
@@ -694,10 +668,14 @@ export default function Keys() {
                 />
               ))}
             </div>
-          ) : displayedKeys.length === 0 ? (
+          ) : listedKeys.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               {keys.length === 0 ? (
                 <p>No entitlement keys found for this OS version.</p>
+              ) : showChanges && !isFiltering ? (
+                <p>No keys changed between these versions.</p>
+              ) : showChanges ? (
+                <p>No changed keys match &quot;{keyword}&quot;</p>
               ) : (
                 <p>No keys match &quot;{keyword}&quot;</p>
               )}
