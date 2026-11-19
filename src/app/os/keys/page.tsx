@@ -34,7 +34,6 @@ import {
   inNamespace,
   namespacePath,
 } from "@/lib/key-tree";
-import { getTopTokens, tokenizeKeys } from "@/lib/tokenizer";
 import type { OS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -368,12 +367,6 @@ export default function Keys() {
     [debouncedKeyword, keys],
   );
 
-  const topTokens = useMemo(() => {
-    if (keys.length === 0) return [];
-    const freq = tokenizeKeys(keys);
-    return getTopTokens(freq, 15, 10);
-  }, [keys]);
-
   const diffReady =
     Boolean(activeCompareTag) &&
     compareKeys !== null &&
@@ -660,21 +653,6 @@ export default function Keys() {
                   </div>
                 )}
               </div>
-
-              {topTokens.length > 0 && !isFiltering && (
-                <div className="flex flex-wrap gap-1">
-                  {topTokens.map(({ token }) => (
-                    <button
-                      key={token}
-                      type="button"
-                      onClick={() => setKeyword(token)}
-                      className="px-2 py-0.5 text-xs rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {token}
-                    </button>
-                  ))}
-                </div>
-              )}
 
               {changesExpanded && diffReady && (
                 <div className="rounded-md border bg-muted/20 p-2">
