@@ -122,9 +122,14 @@ export function KeyLabel({
   text: string;
   className?: string;
 }) {
-  const cut = text.lastIndexOf(".", text.length - 2);
-  const head = cut > 0 ? text.slice(0, cut + 1) : "";
-  const tail = cut > 0 ? text.slice(cut + 1) : text;
+  // Stray leading/trailing spaces are real (typos in shipped entitlements)
+  // and change the key's meaning, so show them instead of letting them vanish.
+  const lead = text.length - text.trimStart().length;
+  const trail = text.length - text.trimEnd().length;
+  const body = text.trim();
+  const cut = body.lastIndexOf(".", body.length - 2);
+  const head = cut > 0 ? body.slice(0, cut + 1) : "";
+  const tail = cut > 0 ? body.slice(cut + 1) : body;
   return (
     <span
       className={cn(
@@ -132,8 +137,29 @@ export function KeyLabel({
         className,
       )}
     >
+      {lead > 0 && <StraySpace count={lead} where="Leading" />}
       {head && <span className="opacity-60">{withBreaks(head)}</span>}
       {withBreaks(tail)}
+      {trail > 0 && <StraySpace count={trail} where="Trailing" />}
+    </span>
+  );
+}
+
+export function StraySpace({
+  count,
+  where,
+}: {
+  count: number;
+  where: "Leading" | "Trailing";
+}) {
+  const label = `${where} space${count > 1 ? "s" : ""} in key`;
+  return (
+    <span
+      className="text-amber-600 dark:text-amber-400"
+      title={label}
+      aria-label={label}
+    >
+      {"␣".repeat(count)}
     </span>
   );
 }

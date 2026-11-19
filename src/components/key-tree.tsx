@@ -217,7 +217,7 @@ export function NamespaceTree({
               <span className="w-5 shrink-0" />
             )}
             <MiddleTruncate
-              text={isRoot ? "All keys" : node.label}
+              text={isRoot ? "All keys" : visibleSpaces(node.label)}
               className={cn(
                 "flex-1",
                 !isRoot && "font-mono",
@@ -266,4 +266,9 @@ function MiddleTruncate({
       <span className="shrink-0 whitespace-pre">{text.slice(-KEEP_TAIL)}</span>
     </span>
   );
+}
+
+/** Make stray leading/trailing spaces in a namespace visible as `␣`. */
+function visibleSpaces(text: string) {
+  return text.replace(/^ +| +$/g, (spaces) => "␣".repeat(spaces.length));
 }
