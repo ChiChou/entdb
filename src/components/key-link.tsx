@@ -19,7 +19,7 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
         entry.key,
       )}&os=${encodeURIComponent(entry.os)}`}
       className={cn(
-        "group flex min-w-0 items-start gap-2 rounded-md px-1 py-1 font-mono text-sm leading-5 transition-colors",
+        "group mb-1 flex min-w-0 break-inside-avoid items-start gap-2 rounded-md px-1 py-1 font-mono text-sm leading-5 transition-colors",
         isNew
           ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
           : isRemoved

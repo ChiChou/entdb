@@ -770,7 +770,9 @@ export default function Keys() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2 2xl:grid-cols-3">
+                {/* Column-major flow so an alphabetical list reads top to bottom;
+                    columns stay wide enough for most full keys on one line. */}
+                <div className="columns-[26rem] gap-x-4">
                   {namespaceKeys.map((entry) => (
                     <KeyLink
                       key={`${entry.status}:${entry.key}`}
