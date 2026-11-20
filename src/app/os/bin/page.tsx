@@ -164,7 +164,7 @@ export default function BinaryDetail() {
                           key={h.os.build}
                           className={`flex items-center gap-1 px-2 py-1 text-sm rounded transition-colors ${
                             isCurrent
-                              ? "bg-primary text-primary-foreground font-medium"
+                              ? "relative bg-primary/10 text-primary font-medium before:absolute before:inset-y-1 before:-left-[13.5px] before:w-0.5 before:rounded-full before:bg-primary"
                               : isComparing
                                 ? "bg-yellow-100 dark:bg-yellow-900/50"
                                 : "hover:bg-accent"

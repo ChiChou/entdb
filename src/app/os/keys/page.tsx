@@ -225,8 +225,9 @@ function VersionHistoryPanel({
                     key={tag}
                     className={cn(
                       "flex items-center gap-1 rounded-md px-2 py-1 text-sm transition-colors",
+                      // A tint plus a mark on the guide line, not a solid block.
                       isCurrent
-                        ? "bg-primary text-primary-foreground"
+                        ? "relative bg-primary/10 text-primary font-medium before:absolute before:inset-y-1 before:-left-[13.5px] before:w-0.5 before:rounded-full before:bg-primary"
                         : isComparing
                           ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
                           : "hover:bg-accent",
@@ -251,7 +252,7 @@ function VersionHistoryPanel({
                         className={cn(
                           "block truncate text-xs",
                           isCurrent
-                            ? "text-primary-foreground/70"
+                            ? "text-primary/70"
                             : "text-muted-foreground/70",
                         )}
                       >
