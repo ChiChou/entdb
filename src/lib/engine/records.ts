@@ -155,6 +155,22 @@ export class RecordEngine implements Engine {
       .map(([path]) => path);
   }
 
+  /** Same record as getPathsForKey: no extra request. */
+  async getValuesForKey(
+    build: string,
+    key: string,
+  ): Promise<Map<string, unknown>> {
+    const [{ ordinal }, record] = await Promise.all([
+      this.locate(build),
+      this.keyRecord(key),
+    ]);
+    const values = new Map<string, unknown>();
+    for (const [path, index, ranges] of record?.rows ?? []) {
+      if (inRanges(ranges, ordinal)) values.set(path, record?.values[index]);
+    }
+    return values;
+  }
+
   async getBinaryXML(build: string, path: string): Promise<string> {
     const [{ ordinal }, record] = await Promise.all([
       this.locate(build),

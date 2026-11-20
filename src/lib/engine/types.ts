@@ -11,5 +11,7 @@ export interface Engine {
   getBinaryXML(build: string, path: string): Promise<string>;
   getKeys(build: string): Promise<string[]>;
   getPathsForKey(build: string, key: string): Promise<string[]>;
+  /** Binaries with `key` in `build`, mapped to their value (parsed plist). */
+  getValuesForKey(build: string, key: string): Promise<Map<string, unknown>>;
   getPathHistory(path: string): Promise<PathHistory[]>;
 }
