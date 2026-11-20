@@ -39,6 +39,8 @@ interface Marks {
   valueFor?: (path: string) => unknown;
   /** Atoms to mark in the values (the active value filter). */
   highlight?: readonly string[];
+  /** Clicking a value item toggles it in the value filter. */
+  onPickValue?: (atom: string) => void;
 }
 
 const MarksContext = createContext<Marks>({});
@@ -148,6 +150,7 @@ const FileItem = memo(function FileItem({
         <ValuePreview
           value={marks.valueFor(fullPath)}
           highlight={marks.highlight ?? NO_HIGHLIGHT}
+          onPick={marks.onPickValue}
           className="ml-3 hidden sm:flex"
         />
       )}
@@ -347,6 +350,7 @@ const FileSystem = memo(function FileSystem({
   osFor,
   valueFor,
   highlight,
+  onPickValue,
 }: {
   list: string[];
   os: string;
@@ -354,8 +358,8 @@ const FileSystem = memo(function FileSystem({
 } & Marks) {
   const tree = useMemo(() => filesToTree(list), [list]);
   const marks = useMemo(
-    () => ({ status, osFor, valueFor, highlight }),
-    [status, osFor, valueFor, highlight],
+    () => ({ status, osFor, valueFor, highlight, onPickValue }),
+    [status, osFor, valueFor, highlight, onPickValue],
   );
   return (
     <MarksContext.Provider value={marks}>

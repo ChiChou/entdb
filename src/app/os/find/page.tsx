@@ -635,6 +635,13 @@ export default function FindByKey() {
           }
           valueFor={hasValues ? valueFor : undefined}
           highlight={selectedAtoms}
+          onPickValue={(atom) =>
+            setSelectedAtoms(
+              selectedAtoms.includes(atom)
+                ? selectedAtoms.filter((a) => a !== atom)
+                : [...selectedAtoms, atom],
+            )
+          }
         />
       )}
     </div>
