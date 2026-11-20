@@ -6,8 +6,6 @@ import {
   createElement,
   Prism as SyntaxHighlighter,
 } from "react-syntax-highlighter";
-import { tomorrow, prism } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useTheme } from "next-themes";
 
 import Link from "next/link";
 import { GitCompare, Download } from "lucide-react";
@@ -38,8 +36,6 @@ export default function BinaryDetail() {
     redirect("/404");
   }
 
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [xml, setXML] = useState<string>("");
   const [xmlKeys, setXMLKeys] = useState<Set<string>>(new Set());
@@ -61,12 +57,6 @@ export default function BinaryDetail() {
   };
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const syntaxTheme = mounted && resolvedTheme === "light" ? prism : tomorrow;
-
-  useEffect(() => {
     async function load() {
       const engine = await createEngine(group);
       const rawXml = await engine.getBinaryXML(build, path!);
@@ -78,7 +68,7 @@ export default function BinaryDetail() {
         const parser = new DOMParser();
         const doc = parser.parseFromString(rawXml, "application/xml");
         const keys = new Set<string>();
-        const keyElements = doc.querySelectorAll("dict > key");
+        const keyElements = doc.querySelectorAll("plist > dict > key");
         keyElements.forEach((el) => keys.add(el.textContent || ""));
         setXMLKeys(keys);
       } catch {
@@ -268,16 +258,34 @@ export default function BinaryDetail() {
             <SyntaxHighlighter
               language="xml"
               showLineNumbers={true}
-              style={syntaxTheme}
-              customStyle={{
-                margin: 0,
-                borderRadius: "0.5rem",
-                fontSize: "0.875rem",
-                paddingTop: "2.5rem",
-              }}
+              // Colored by .plist-code in globals.css, from the site's tokens.
+              useInlineStyles={false}
+              // Otherwise <code> keeps the default theme's inline color/shadow.
+              codeTagProps={{ style: {} }}
+              className="plist-code"
               renderer={({ rows, stylesheet, useInlineStyles }) => {
-                function addLink(node: rendererNode) {
-                  if (node.type === "text" && xmlKeys.has(node.value as string)) {
+                function addLink(
+                  node: rendererNode,
+                  linkable: boolean,
+                  inTag = false,
+                ): rendererNode {
+                  if (
+                    inTag &&
+                    node.type === "text" &&
+                    (node.value === "true" || node.value === "false")
+                  ) {
+                    return {
+                      type: "element",
+                      tagName: "span",
+                      children: [node],
+                      properties: { className: ["token", "boolean"] },
+                    } as rendererNode;
+                  }
+                  if (
+                    linkable &&
+                    !inTag &&
+                    node.type === "text" &&
+                    xmlKeys.has(node.value as string)) {
                     return {
                       type: "element",
                       tagName: "span",
@@ -292,7 +300,7 @@ export default function BinaryDetail() {
                             } as rendererNode,
                           ],
                           properties: {
-                            className: ["text-blue-600", "dark:text-blue-300", "hover:underline"],
+                            className: ["hover:underline"],
                             href: withBase(
                               `/os/find?key=${encodeURIComponent(
                                 node.value as string,
@@ -306,14 +314,25 @@ export default function BinaryDetail() {
                   }
 
                   if (node.children) {
-                    node.children = node.children.map(addLink);
+                    const tag =
+                      inTag ||
+                      (node.properties?.className as string[] | undefined)?.includes("tag");
+                    node.children = node.children.map((child) => addLink(child, linkable, tag));
                   }
                   return node;
                 }
 
+                // Only <key> lines link, so a string value that happens to
+                // equal a key name stays a value.
+                function textOf(node: rendererNode): string {
+                  if (node.type === "text") return String(node.value ?? "");
+                  return (node.children ?? []).map(textOf).join("");
+                }
+
                 return rows.map((row, i) => {
+                  const isKeyLine = /^\s*(?:\d+)?\s*<key>/.test(textOf(row));
                   return createElement({
-                    node: addLink(row),
+                    node: addLink(row, isKeyLine),
                     stylesheet,
                     useInlineStyles,
                     key: `code-segment-${i}`,

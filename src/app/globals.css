@@ -159,3 +159,44 @@
     }
 }
 
+/*
+ * Plist viewer (react-syntax-highlighter with useInlineStyles={false}).
+ * Same vocabulary as the rest of the site: keys are primary (they link to
+ * the key), values are violet like the value chips, markup recedes.
+ * Prism's classes arrive flattened ("token tag punctuation"), so order
+ * matters: the generic .token.tag (tag names) comes first.
+ */
+.plist-code {
+    margin: 0;
+    padding: 2.5rem 1rem 1rem 0;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--value);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    overflow: auto;
+}
+.dark .plist-code {
+    background: var(--card);
+}
+.plist-code .linenumber {
+    color: var(--muted-foreground);
+    opacity: 0.55;
+}
+.plist-code .token.tag {
+    color: var(--key-prefix);
+}
+.plist-code .token.punctuation,
+.plist-code .token.attr-name,
+.plist-code .token.attr-value,
+.plist-code .token.prolog {
+    color: var(--muted-foreground);
+}
+.plist-code .token.boolean {
+    color: var(--value);
+}
+.plist-code .linked-key a {
+    color: var(--primary);
+}
