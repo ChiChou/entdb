@@ -232,7 +232,7 @@ export function NamespaceTree({
                 +{node.marked}
               </span>
             )}
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground/70">
+            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
               {node.count}
             </span>
           </div>

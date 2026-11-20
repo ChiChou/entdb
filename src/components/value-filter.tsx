@@ -178,7 +178,7 @@ export function ValueConditions({
         <span key={atom} className="flex min-w-0 items-center gap-1.5">
           {i > 0 && <span className="text-muted-foreground">and</span>}
           <span
-            className="inline-flex h-6 min-w-0 max-w-[20rem] items-center gap-0.5 rounded-md bg-primary/10 pl-2 pr-0.5 font-mono"
+            className="inline-flex h-6 min-w-0 max-w-[20rem] items-center gap-0.5 rounded-md bg-value/10 pl-2 pr-0.5 font-mono text-value"
             title={atom}
           >
             <span className="truncate">{atom}</span>

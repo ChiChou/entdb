@@ -133,12 +133,16 @@ const FileItem = memo(function FileItem({
         href={`/os/bin?path=${encodeURIComponent(fullPath)}&os=${linkOs}`}
         className={cn(
           "font-mono text-sm hover:underline truncate",
-          !mark && "text-muted-foreground hover:text-foreground",
           marks.valueFor && "sm:max-w-[60%] sm:shrink-0",
         )}
         title={fullPath}
       >
-        {name}
+        {name.includes("/") && (
+          <span className={mark ? "opacity-70" : "text-key-prefix"}>
+            {name.slice(0, name.lastIndexOf("/") + 1)}
+          </span>
+        )}
+        {name.slice(name.lastIndexOf("/") + 1)}
       </Link>
       {marks.valueFor && (
         <ValuePreview
@@ -232,9 +236,9 @@ function TreeFolder({
           ) : (
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
-          <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <Folder className="h-4 w-4 shrink-0 text-folder" />
           <span className="font-mono text-sm truncate">{name}</span>
-          <span className="ml-2 text-xs text-muted-foreground">
+          <span className="ml-2 text-xs tabular-nums text-muted-foreground">
             {itemCount}
           </span>
           {changed.added > 0 && (

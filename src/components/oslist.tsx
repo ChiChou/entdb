@@ -327,7 +327,7 @@ export default function OSList() {
 
             return (
               <section key={group.name} id={group.name} className="mb-6">
-                <h2 className="text-2xl font-semibold text-center text-muted-foreground mb-4">
+                <h2 className="text-2xl font-semibold text-center mb-4">
                   {getPlatformName(group.name)}
                 </h2>
 

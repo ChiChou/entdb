@@ -157,7 +157,7 @@ export default function BinaryDetail() {
                       ▶
                     </span>
                     <span className="flex-1">{group === "iOS" ? "iOS" : group} {major}.x</span>
-                    <span className="text-xs text-muted-foreground/60">
+                    <span className="text-xs text-muted-foreground">
                       {versions.length}
                     </span>
                   </summary>
@@ -193,7 +193,7 @@ export default function BinaryDetail() {
                               {h.os.version}
                             </span>
                             {isCurrent && (
-                              <span className="ml-1 text-xs opacity-70">
+                              <span className="ml-1 text-xs opacity-85">
                                 (current)
                               </span>
                             )}

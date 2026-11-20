@@ -50,7 +50,7 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
           ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/50"
           : isRemoved
             ? "bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50"
-            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+            : "text-foreground hover:bg-accent",
       )}
     >
       <Link
@@ -105,7 +105,11 @@ export function KeyLink({ entry }: { entry: DisplayedKey }) {
           </span>
         )}
         <span ref={labelRef} className="min-w-0">
-          <KeyLabel text={entry.key} />
+          <KeyLabel
+            text={entry.key}
+            // Marked rows keep their green/red; only fade the prefix.
+            prefixClassName={isNew || isRemoved ? "opacity-70" : undefined}
+          />
         </span>
       </Link>
       <CopyKey text={entry.key} />
@@ -161,9 +165,12 @@ function CopyKey({ text }: { text: string }) {
 export function KeyLabel({
   text,
   className,
+  prefixClassName = "text-key-prefix",
 }: {
   text: string;
   className?: string;
+  /** Style of the namespace part before the last dot. */
+  prefixClassName?: string;
 }) {
   // Stray leading/trailing spaces are real (typos in shipped entitlements)
   // and change the key's meaning, so show them instead of letting them vanish.
@@ -181,7 +188,7 @@ export function KeyLabel({
       )}
     >
       {lead > 0 && <StraySpace count={lead} where="Leading" />}
-      {head && <span className="opacity-60">{withBreaks(head)}</span>}
+      {head && <span className={prefixClassName}>{withBreaks(head)}</span>}
       {withBreaks(tail)}
       {trail > 0 && <StraySpace count={trail} where="Trailing" />}
     </span>
