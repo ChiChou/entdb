@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { BetaBadge } from "@/components/beta-badge";
 import FileSystem, { type PathStatus } from "@/components/filesystem";
@@ -24,8 +24,10 @@ import { HeaderPortal } from "@/components/header-portal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ValueConditions, ValueFilter } from "@/components/value-filter";
 import { useQueryFilter } from "@/hooks/use-query-filter";
 import { createEngine } from "@/lib/engine";
+import { atomOf, isUniform, matchesAtoms } from "@/lib/entitlement-value";
 import {
   KEY_TRANSITION_NAME,
   type KeysReturn,
@@ -65,17 +67,13 @@ function keysUrlFor(os: string, ns: string) {
   return `/os/keys?${query.toString()}`;
 }
 
-/** Paths for a key in a build; a key absent from the build has none. */
-async function pathsForKey(group: string, build: string, key: string) {
+/** Binaries with a key in a build, mapped to their values (empty if none). */
+async function valuesForKey(group: string, build: string, key: string) {
   const engine = await createEngine(group);
-  try {
-    return await engine.getPathsForKey(build, key);
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith("key not found"))
-      return [];
-    throw error;
-  }
+  return engine.getValuesForKey(build, key);
 }
+
+const NO_VALUES = new Map<string, unknown>();
 
 export default function FindByKey() {
   const params = useSearchParams();
@@ -85,6 +83,11 @@ export default function FindByKey() {
 
   const [group, build] = os ? os.split("/") : ["", ""];
   const compareWith = params.get("diff");
+  // ?v=a&v=b: binaries whose value contains both atoms. Local state (like
+  // "Changed only"), so quick successive picks never read a stale URL.
+  const [selectedAtoms, setSelectedAtomsState] = useState(() =>
+    params.getAll("v"),
+  );
 
   useEffect(() => {
     if (os && key) {
@@ -97,9 +100,12 @@ export default function FindByKey() {
   }
 
   const [loading, setLoading] = useState(true);
-  const [paths, setPaths] = useState<string[]>([]);
+  const [values, setValues] = useState(NO_VALUES);
   const [versions, setVersions] = useState<OS[]>([]);
-  const [comparePaths, setComparePaths] = useState<string[] | null>(null);
+  const [compareValues, setCompareValues] = useState<Map<
+    string,
+    unknown
+  > | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState(false);
   const [changesOnly, setChangesOnlyState] = useState(
@@ -113,18 +119,18 @@ export default function FindByKey() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      pathsForKey(group, build, key),
+      valuesForKey(group, build, key),
       createEngine(group).then((engine) =>
         engine.listOS().catch(() => [] as OS[]),
       ),
     ])
       .then(([result, list]) => {
         if (cancelled) return;
-        setPaths(result);
+        setValues(result);
         setVersions([...list].sort(compareOSVersion));
       })
       .catch(() => {
-        if (!cancelled) setPaths([]);
+        if (!cancelled) setValues(NO_VALUES);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -144,17 +150,17 @@ export default function FindByKey() {
   useEffect(() => {
     let cancelled = false;
     if (!activeCompare) {
-      setComparePaths(null);
+      setCompareValues(null);
       setCompareLoading(false);
       setCompareError(false);
       return;
     }
-    setComparePaths(null);
+    setCompareValues(null);
     setCompareLoading(true);
     setCompareError(false);
-    pathsForKey(group, versionTag(activeCompare), key)
+    valuesForKey(group, versionTag(activeCompare), key)
       .then((result) => {
-        if (!cancelled) setComparePaths(result);
+        if (!cancelled) setCompareValues(result);
       })
       .catch(() => {
         if (!cancelled) setCompareError(true);
@@ -167,17 +173,43 @@ export default function FindByKey() {
     };
   }, [group, key, activeCompare]);
 
-  const diffReady = Boolean(activeCompare) && comparePaths !== null;
+  const paths = useMemo(() => [...values.keys()], [values]);
+  const diffReady = Boolean(activeCompare) && compareValues !== null;
 
   const { added, removed } = useMemo(() => {
-    if (!diffReady || !comparePaths) return { added: [], removed: [] };
-    const current = new Set(paths);
-    const base = new Set(comparePaths);
+    if (!diffReady || !compareValues) return { added: [], removed: [] };
     return {
-      added: paths.filter((path) => !base.has(path)),
-      removed: comparePaths.filter((path) => !current.has(path)),
+      added: paths.filter((path) => !compareValues.has(path)),
+      removed: [...compareValues.keys()].filter((path) => !values.has(path)),
     };
-  }, [comparePaths, diffReady, paths]);
+  }, [compareValues, diffReady, paths, values]);
+
+  // A lost binary shows (and filters by) its value in the compared build.
+  const valueFor = useCallback(
+    (path: string) =>
+      values.has(path) ? values.get(path) : compareValues?.get(path),
+    [compareValues, values],
+  );
+
+  // Every binary's value, for the value filter's suggestions.
+  const allValues = useMemo(
+    () => [...paths, ...removed].map(valueFor),
+    [paths, removed, valueFor],
+  );
+  // `true` everywhere: say it once instead of on every row.
+  const uniformValue = useMemo(
+    () => (isUniform(allValues) ? allValues[0] : undefined),
+    [allValues],
+  );
+  const hasValues = allValues.length > 0 && uniformValue === undefined;
+
+  const setSelectedAtoms = (atoms: string[]) => {
+    setSelectedAtomsState(atoms);
+    const next = new URLSearchParams(window.location.search);
+    next.delete("v");
+    for (const atom of atoms) next.append("v", atom);
+    window.history.replaceState(null, "", `?${next.toString()}`);
+  };
 
   const showChanges = changesOnly && diffReady;
 
@@ -188,7 +220,11 @@ export default function FindByKey() {
     const all = showChanges ? [...added, ...removed] : [...paths, ...removed];
     const kw = debouncedKeyword.toLowerCase();
     return {
-      list: kw ? all.filter((path) => path.toLowerCase().includes(kw)) : all,
+      list: all.filter(
+        (path) =>
+          (!kw || path.toLowerCase().includes(kw)) &&
+          matchesAtoms(valueFor(path), selectedAtoms),
+      ),
       statusOf: (path: string): PathStatus | undefined =>
         addedSet.has(path)
           ? "added"
@@ -196,7 +232,15 @@ export default function FindByKey() {
             ? "removed"
             : undefined,
     };
-  }, [added, debouncedKeyword, paths, removed, showChanges]);
+  }, [
+    added,
+    debouncedKeyword,
+    paths,
+    removed,
+    selectedAtoms,
+    showChanges,
+    valueFor,
+  ]);
 
   const setParam = (name: string, value: string | null) => {
     const next = new URLSearchParams(params.toString());
@@ -219,7 +263,7 @@ export default function FindByKey() {
     return () => clearTimeout(timer);
   }, [copied]);
 
-  const isFiltering = debouncedKeyword.length > 0;
+  const isFiltering = debouncedKeyword.length > 0 || selectedAtoms.length > 0;
   // Narrowed views (filter, changes only) open every folder; otherwise the
   // tree starts with top-level folders open, as before.
   const narrowed = isFiltering || showChanges;
@@ -439,7 +483,25 @@ export default function FindByKey() {
                   )}
                 </>
               )}
+              {uniformValue !== undefined && (
+                <>
+                  , all{" "}
+                  <code className="rounded bg-muted px-1 font-mono text-xs text-foreground">
+                    {typeof uniformValue === "string"
+                      ? `"${uniformValue}"`
+                      : atomOf(uniformValue)}
+                  </code>
+                </>
+              )}
             </span>
+          )}
+
+          {!loading && hasValues && (
+            <ValueFilter
+              values={allValues}
+              selected={selectedAtoms}
+              onChange={setSelectedAtoms}
+            />
           )}
 
           {compareLoading && (
@@ -516,6 +578,15 @@ export default function FindByKey() {
         </div>
       </div>
 
+      {!loading && hasValues && selectedAtoms.length > 0 && (
+        <div className="-mt-2 mb-3">
+          <ValueConditions
+            selected={selectedAtoms}
+            onChange={setSelectedAtoms}
+          />
+        </div>
+      )}
+
       {loading ? (
         <div
           aria-busy="true"
@@ -547,6 +618,8 @@ export default function FindByKey() {
             <p>No binaries found with this entitlement.</p>
           ) : showChanges && !isFiltering ? (
             <p>No binaries gained or lost this key.</p>
+          ) : selectedAtoms.length > 0 && !debouncedKeyword ? (
+            <p>No binaries have a value containing all of the selected.</p>
           ) : (
             <p>No binaries match &quot;{keyword}&quot;</p>
           )}
@@ -560,6 +633,8 @@ export default function FindByKey() {
           osFor={(path) =>
             statusOf(path) === "removed" ? compareOs : undefined
           }
+          valueFor={hasValues ? valueFor : undefined}
+          highlight={selectedAtoms}
         />
       )}
     </div>

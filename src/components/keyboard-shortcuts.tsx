@@ -18,6 +18,7 @@ import {
  *   /        focus the page filter      Esc   clear it, then leave it
  *   j / k    next / previous item       ?     this help
  *   g h|k|f  go home / keys / files     v     version picker
+ *                                       =     value filter (find page)
  *
  * Lists opt in by marking focusable rows with `data-nav-item`. Widgets that
  * own their keys (the namespace tree, file trees) handle them first and call
@@ -29,6 +30,9 @@ export const NAV_ITEM_ATTR = "data-nav-item";
 
 /** Marks the button that opens the version picker. */
 export const VERSION_PICKER_ATTR = "data-version-picker";
+
+/** Marks the button that opens the value filter. */
+export const VALUE_FILTER_ATTR = "data-value-filter";
 
 const GOTO_WINDOW_MS = 1200;
 
@@ -149,9 +153,10 @@ export function KeyboardShortcuts({ os }: { os: string }) {
         case "g":
           gotoAt = performance.now();
           return;
-        case "v": {
+        case "v":
+        case "=": {
           const picker = document.querySelector<HTMLElement>(
-            `[${VERSION_PICKER_ATTR}]`,
+            `[${event.key === "v" ? VERSION_PICKER_ATTR : VALUE_FILTER_ATTR}]`,
           );
           if (!picker) return;
           event.preventDefault();
@@ -226,6 +231,7 @@ const SHORTCUTS: { title: string; items: [string[], string][] }[] = [
       [["/"], "Filter"],
       [["Esc"], "Clear / leave filter"],
       [["v"], "Switch version"],
+      [["="], "Filter by value"],
       [["?"], "Show shortcuts"],
     ],
   },

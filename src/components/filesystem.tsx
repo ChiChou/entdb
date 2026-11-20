@@ -20,6 +20,7 @@ import {
   useState,
 } from "react";
 
+import { ValuePreview } from "@/components/value-preview";
 import filesToTree, { type TreeWithFullPath } from "@/lib/tree";
 import Link from "next/link";
 
@@ -34,9 +35,14 @@ export type PathStatus = "added" | "removed";
 interface Marks {
   status?: (path: string) => PathStatus | undefined;
   osFor?: (path: string) => string | undefined;
+  /** Shows each binary's entitlement value next to its name. */
+  valueFor?: (path: string) => unknown;
+  /** Atoms to mark in the values (the active value filter). */
+  highlight?: readonly string[];
 }
 
 const MarksContext = createContext<Marks>({});
+const NO_HIGHLIGHT: readonly string[] = [];
 
 function countMarks(item: TreeWithFullPath, status: Marks["status"]) {
   let added = 0;
@@ -128,11 +134,19 @@ const FileItem = memo(function FileItem({
         className={cn(
           "font-mono text-sm hover:underline truncate",
           !mark && "text-muted-foreground hover:text-foreground",
+          marks.valueFor && "sm:max-w-[60%] sm:shrink-0",
         )}
         title={fullPath}
       >
         {name}
       </Link>
+      {marks.valueFor && (
+        <ValuePreview
+          value={marks.valueFor(fullPath)}
+          highlight={marks.highlight ?? NO_HIGHLIGHT}
+          className="ml-1 hidden sm:flex"
+        />
+      )}
     </div>
   );
 });
@@ -327,13 +341,18 @@ const FileSystem = memo(function FileSystem({
   expandAll = null,
   status,
   osFor,
+  valueFor,
+  highlight,
 }: {
   list: string[];
   os: string;
   expandAll?: boolean | null;
 } & Marks) {
   const tree = useMemo(() => filesToTree(list), [list]);
-  const marks = useMemo(() => ({ status, osFor }), [status, osFor]);
+  const marks = useMemo(
+    () => ({ status, osFor, valueFor, highlight }),
+    [status, osFor, valueFor, highlight],
+  );
   return (
     <MarksContext.Provider value={marks}>
       <div onKeyDown={onTreeKeyDown}>
