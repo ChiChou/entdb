@@ -148,7 +148,7 @@ const FileItem = memo(function FileItem({
         <ValuePreview
           value={marks.valueFor(fullPath)}
           highlight={marks.highlight ?? NO_HIGHLIGHT}
-          className="ml-1 hidden sm:flex"
+          className="ml-3 hidden sm:flex"
         />
       )}
     </div>

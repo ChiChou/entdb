@@ -8,11 +8,15 @@ function titleFor(value: unknown) {
   return json.length > TITLE_LIMIT ? `${json.slice(0, TITLE_LIMIT)}\n…` : json;
 }
 
+/** One value item as a chip, so values never read as part of the path. */
 function Atom({ atom, hit }: { atom: string; hit: boolean }) {
   return (
     <span
       className={cn(
-        hit && "rounded-sm bg-primary/10 px-0.5 font-medium text-foreground",
+        "shrink-0 rounded px-1.5 leading-5",
+        hit
+          ? "bg-value font-medium text-background"
+          : "bg-value/8 text-value ring-1 ring-inset ring-value/15",
       )}
     >
       {atom}
@@ -53,26 +57,19 @@ export function ValuePreview({
       ...items.filter((item) => hits.has(item)),
       ...items.filter((item) => !hits.has(item)),
     ];
-    body = (
-      <>
-        {isList ? "[" : "{"}
-        {ordered.map((item, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: items may repeat
-          <span key={i}>
-            {i > 0 && ", "}
-            <Atom atom={item} hit={hits.has(item)} />
-          </span>
-        ))}
-        {isList ? "]" : "}"}
-      </>
-    );
+    body = ordered.map((item, i) => (
+      <Atom
+        // biome-ignore lint/suspicious/noArrayIndexKey: items may repeat
+        key={i}
+        atom={item}
+        hit={hits.has(item)}
+      />
+    ));
   } else {
     const atom = atomOf(value);
     body = (
-      <Atom
-        atom={typeof value === "string" ? `"${atom}"` : atom}
-        hit={hits.has(atom)}
-      />
+      // The chip already sets it apart, so strings need no quotes.
+      <Atom atom={atom} hit={hits.has(atom)} />
     );
   }
 
@@ -84,9 +81,15 @@ export function ValuePreview({
       )}
       title={titleFor(value)}
     >
-      <span className="truncate">{body}</span>
+      {/* Chips that don't fit are clipped; the count says how many. */}
+      <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+        {body}
+      </span>
       {count !== null && count > 1 && (
-        <span className="shrink-0 rounded bg-muted px-1 tabular-nums">
+        <span
+          className="shrink-0 tabular-nums text-muted-foreground"
+          title={`${count} ${isDict ? "keys" : "items"}`}
+        >
           {count}
         </span>
       )}
