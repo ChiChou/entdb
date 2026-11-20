@@ -14,7 +14,9 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/data/:path*",
-        destination: "https://codecolor.ist/entdb-data/:path*",
+        // Point at a local build with ENTDB_DATA_ORIGIN, e.g. entdb-data's
+        // `python scripts/serve.py build-output` on http://localhost:8787.
+        destination: `${process.env.ENTDB_DATA_ORIGIN ?? "https://codecolor.ist/entdb-data"}/:path*`,
       },
     ];
   },

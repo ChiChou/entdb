@@ -13,7 +13,8 @@ import { useEffect, useState } from "react";
 
 import { BetaBadge } from "@/components/beta-badge";
 import { VERSION_PICKER_ATTR } from "@/components/keyboard-shortcuts";
-import { basePath, dataURL } from "@/lib/env";
+import { createEngine } from "@/lib/engine";
+import { basePath } from "@/lib/env";
 import type { OS } from "@/lib/types";
 
 function compareVersion(a: string, b: string) {
@@ -44,8 +45,9 @@ export function VersionSwitcher({ currentOs }: { currentOs: string }) {
   useEffect(() => {
     if (!group) return;
 
-    fetch(`${dataURL}/${group}/list.json`)
-      .then((r) => r.json())
+    // Through the engine, so the list is fetched once per page.
+    createEngine(group)
+      .then((engine) => engine.listOS())
       .then((list: OS[]) => {
         list.sort((a, b) => compareVersion(a.version, b.version));
         setVersions(list);
